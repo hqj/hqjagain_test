@@ -9086,7 +9086,7 @@ static void sctp_wfree(struct sk_buff *skb)
 	sk->sk_wmem_queued -= skb->truesize;
 	asoc->sndbuf_used -= skb->truesize;
 	
-	if ((skb_shinfo(skb)->gso_type != SKB_GSO_SCTP) || (skb_shinfo(skb)->frag_list == skb)) {
+	if (skb_shinfo(skb)->gso_type != SKB_GSO_SCTP) {
 		sk->sk_wmem_queued -= sizeof(struct sctp_chunk);
 		asoc->sndbuf_used -= sizeof(struct sctp_chunk);
 		WARN_ON(refcount_sub_and_test(sizeof(struct sctp_chunk),
