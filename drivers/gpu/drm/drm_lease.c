@@ -16,7 +16,7 @@
 #include "drm_internal.h"
 #include "drm_legacy.h"
 
-#undef DRM_DEBUG_DP(fmt, ...)
+#undef DRM_DEBUG_LEASE(fmt, ...)
 
 void __drm_dbg_test(enum drm_debug_category category, const char *format, ...)
 {
@@ -33,7 +33,7 @@ void __drm_dbg_test(enum drm_debug_category category, const char *format, ...)
 	va_end(args);
 }
 
-#define DRM_DEBUG_DP(fmt, ...)						\
+#define DRM_DEBUG_LEASE(fmt, ...)						\
 		__drm_dbg_test(DRM_UT_DP, fmt, ## __VA_ARGS__)
 
 #define drm_for_each_lessee(lessee, lessor) \
