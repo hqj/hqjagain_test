@@ -581,6 +581,7 @@ int drm_mode_create_lease_ioctl(struct drm_device *dev,
 
 out_lessee:
 	drm_master_put(&lessee);
+	drm_master_put(&lessor);
 
 out_leases:
 	put_unused_fd(fd);
