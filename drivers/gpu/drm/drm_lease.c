@@ -438,7 +438,7 @@ static int fill_object_idr(struct drm_device *dev,
 		if (ret < 0) {
 			DRM_DEBUG_LEASE("Object %d cannot be inserted into leases (%d)\n",
 					object_id, ret);
-			goto out_free_objects;
+			goto out_unlock;
 		}
 		if (obj->type == DRM_MODE_OBJECT_CRTC && !universal_planes) {
 			struct drm_crtc *crtc = obj_to_crtc(obj);
@@ -446,21 +446,22 @@ static int fill_object_idr(struct drm_device *dev,
 			if (ret < 0) {
 				DRM_DEBUG_LEASE("Object primary plane %d cannot be inserted into leases (%d)\n",
 						object_id, ret);
-				goto out_free_objects;
+				goto out_unlock;
 			}
 			if (crtc->cursor) {
 				ret = idr_alloc(leases, &drm_lease_idr_object, crtc->cursor->base.id, crtc->cursor->base.id + 1, GFP_KERNEL);
 				if (ret < 0) {
 					DRM_DEBUG_LEASE("Object cursor plane %d cannot be inserted into leases (%d)\n",
 							object_id, ret);
-					goto out_free_objects;
+					goto out_unlock;
 				}
 			}
 		}
 	}
-	mutex_unlock(&dev->mode_config.idr_mutex);
 
 	ret = 0;
+out_unlock:
+	mutex_unlock(&dev->mode_config.idr_mutex);
 out_free_objects:
 	for (o = 0; o < object_count; o++) {
 		if (objects[o])
@@ -524,6 +525,7 @@ int drm_mode_create_lease_ioctl(struct drm_device *dev,
 	if (IS_ERR(object_ids))
 		return PTR_ERR(object_ids);
 
+	memset(&leases, 0, sizeof(struct idr));
 	idr_init(&leases);
 
 	/* fill and validate the object idr */
