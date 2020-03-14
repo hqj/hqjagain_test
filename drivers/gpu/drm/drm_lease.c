@@ -16,6 +16,26 @@
 #include "drm_internal.h"
 #include "drm_legacy.h"
 
+#undef DRM_DEBUG_DP(fmt, ...)
+
+void __drm_dbg_test(enum drm_debug_category category, const char *format, ...)
+{
+	struct va_format vaf;
+	va_list args;
+		
+	va_start(args, format);
+	vaf.fmt = format;
+	vaf.va = &args;
+		
+	printk(KERN_DEBUG "[" DRM_NAME ":%ps] %pV",
+				 __builtin_return_address(0), &vaf);
+		
+	va_end(args);
+}
+
+#define DRM_DEBUG_DP(fmt, ...)						\
+		__drm_dbg_test(DRM_UT_DP, fmt, ## __VA_ARGS__)
+
 #define drm_for_each_lessee(lessee, lessor) \
 	list_for_each_entry((lessee), &(lessor)->lessees, lessee_list)
 
