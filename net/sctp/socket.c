@@ -9085,7 +9085,9 @@ static void sctp_wfree(struct sk_buff *skb)
 	sk_mem_uncharge(sk, skb->truesize);
 	sk->sk_wmem_queued -= skb->truesize + sizeof(struct sctp_chunk);
 	asoc->sndbuf_used -= skb->truesize + sizeof(struct sctp_chunk);
-	WARN_ON(refcount_sub_and_test(sizeof(struct sctp_chunk),
+	
+	if (skb_is_gso(skb)
+		WARN_ON(refcount_sub_and_test(sizeof(struct sctp_chunk),
 				      &sk->sk_wmem_alloc));
 
 	if (chunk->shkey) {
