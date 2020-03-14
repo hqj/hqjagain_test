@@ -420,6 +420,7 @@ static int fill_object_idr(struct drm_device *dev,
 
 	/* add their IDs to the lease request - taking into account
 	   universal planes */
+	mutex_lock(&dev->mode_config.idr_mutex);
 	for (o = 0; o < object_count; o++) {
 		struct drm_mode_object *obj = objects[o];
 		u32 object_id = objects[o]->id;
@@ -457,6 +458,7 @@ static int fill_object_idr(struct drm_device *dev,
 			}
 		}
 	}
+	mutex_unlock(&dev->mode_config.idr_mutex);
 
 	ret = 0;
 out_free_objects:
