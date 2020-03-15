@@ -496,6 +496,9 @@ int drm_mode_create_lease_ioctl(struct drm_device *dev,
 	struct drm_file *lessee_priv;
 	int fd = -1;
 	uint32_t *object_ids;
+	
+	printk("hqjagain: lessor %#llx. %s %d\n", lessor, __func__, __LINE__);
+	printk("hqjagain: leases %#llx. %s %d\n", &leases, __func__, __LINE__);
 
 	/* Can't lease without MODESET */
 	if (!drm_core_check_feature(dev, DRIVER_MODESET))
@@ -581,6 +584,8 @@ int drm_mode_create_lease_ioctl(struct drm_device *dev,
 
 out_lessee:
 	printk("hqjagain: lessor %#llx. %s %d\n", lessor, __func__, __LINE__);
+	printk("hqjagain: lessee %#llx. %s %d\n", lessee, __func__, __LINE__);
+	printk("hqjagain: leases %#llx. %s %d\n", &leases, __func__, __LINE__);
 	
 	drm_master_put(&lessee);
 	drm_master_put(&lessor);
@@ -588,6 +593,7 @@ out_lessee:
 out_leases:
 	put_unused_fd(fd);
 	idr_destroy(&leases);
+	printk("hqjagain: leases %#llx. %s %d\n", &leases, __func__, __LINE__);
 
 	printk("drm_mode_create_lease_ioctl failed: %d\n", ret);
 	return ret;
