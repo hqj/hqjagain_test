@@ -344,6 +344,9 @@ static void drm_master_destroy(struct kref *kref)
 	idr_destroy(&master->magic_map);
 	idr_destroy(&master->leases);
 	idr_destroy(&master->lessee_idr);
+	
+	printk("hqjagain: leases %#llx. %s %d\n", &master->leases, __func__, __LINE__);
+	printk("hqjagain: lessee_idr %#llx. %s %d\n", &master->lessee_idr, __func__, __LINE__);
 
 	kfree(master->unique);
 	kfree(master);
