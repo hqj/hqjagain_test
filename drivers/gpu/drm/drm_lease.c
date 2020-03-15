@@ -202,11 +202,11 @@ static struct drm_master *drm_lease_create(struct drm_master *lessor, struct idr
 	int id;
 	void *entry;
 
-	DRM_DEBUG_LEASE("lessor %d\n", lessor->lessee_id);
+	printk("lessor %d\n", lessor->lessee_id);
 
 	lessee = drm_master_create(lessor->dev);
 	if (!lessee) {
-		DRM_DEBUG_LEASE("drm_master_create failed\n");
+		printk("drm_master_create failed\n");
 		return ERR_PTR(-ENOMEM);
 	}
 
@@ -220,7 +220,7 @@ static struct drm_master *drm_lease_create(struct drm_master *lessor, struct idr
 			error = -EBUSY;
 
 		if (error != 0) {
-			DRM_DEBUG_LEASE("object %d failed %d\n", object, error);
+			printk("object %d failed %d\n", object, error);
 			goto out_lessee;
 		}
 	}
@@ -238,7 +238,7 @@ static struct drm_master *drm_lease_create(struct drm_master *lessor, struct idr
 
 	/* Move the leases over */
 	lessee->leases = *leases;
-	DRM_DEBUG_LEASE("new lessee %d %p, lessor %d %p\n", lessee->lessee_id, lessee, lessor->lessee_id, lessor);
+	printk("new lessee %d %p, lessor %d %p\n", lessee->lessee_id, lessee, lessor->lessee_id, lessor);
 
 	mutex_unlock(&dev->mode_config.idr_mutex);
 	return lessee;
@@ -533,7 +533,7 @@ int drm_mode_create_lease_ioctl(struct drm_device *dev,
 			      object_count, object_ids);
 	kfree(object_ids);
 	if (ret) {
-		DRM_DEBUG_LEASE("lease object lookup failed: %i\n", ret);
+		printk("lease object lookup failed: %i\n", ret);
 		idr_destroy(&leases);
 		return ret;
 	}
@@ -554,7 +554,7 @@ int drm_mode_create_lease_ioctl(struct drm_device *dev,
 	}
 
 	/* Clone the lessor file to create a new file for us */
-	DRM_DEBUG_LEASE("Allocating lease file\n");
+	printk("Allocating lease file\n");
 	lessee_file = file_clone_open(lessor_file);
 	if (IS_ERR(lessee_file)) {
 		ret = PTR_ERR(lessee_file);
@@ -569,14 +569,14 @@ int drm_mode_create_lease_ioctl(struct drm_device *dev,
 	lessee_priv->authenticated = 1;
 
 	/* Pass fd back to userspace */
-	DRM_DEBUG_LEASE("Returning fd %d id %d\n", fd, lessee->lessee_id);
+	printk("Returning fd %d id %d\n", fd, lessee->lessee_id);
 	cl->fd = fd;
 	cl->lessee_id = lessee->lessee_id;
 
 	/* Hook up the fd */
 	fd_install(fd, lessee_file);
 
-	DRM_DEBUG_LEASE("drm_mode_create_lease_ioctl succeeded\n");
+	printk("drm_mode_create_lease_ioctl succeeded\n");
 	return 0;
 
 out_lessee:
@@ -587,7 +587,7 @@ out_leases:
 	put_unused_fd(fd);
 	idr_destroy(&leases);
 
-	DRM_DEBUG_LEASE("drm_mode_create_lease_ioctl failed: %d\n", ret);
+	printk("drm_mode_create_lease_ioctl failed: %d\n", ret);
 	return ret;
 }
 
