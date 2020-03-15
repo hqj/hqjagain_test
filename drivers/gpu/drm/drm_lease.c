@@ -577,6 +577,10 @@ int drm_mode_create_lease_ioctl(struct drm_device *dev,
 
 out_lessee:
 	drm_master_put(&lessee);
+	put_unused_fd(fd);
+	
+	DRM_DEBUG_LEASE("drm_mode_create_lease_ioctl failed: %d\n", ret);
+	return ret;
 
 out_leases:
 	put_unused_fd(fd);
