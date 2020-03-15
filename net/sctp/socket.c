@@ -9141,7 +9141,7 @@ void sctp_sock_rfree(struct sk_buff *skb)
 	 */
 	sk_mem_uncharge(sk, event->rmem_len);
 	printk("skb %#llx %#llx: truesize %d, rlen %d, sk alloc %d %s %d\n", skb, sk, skb->truesize,
-					event->rmen_len, refcount_read(&sk->sk_wmem_alloc), __func__, __LINE__);
+					event->rmem_len, refcount_read(&sk->sk_wmem_alloc), __func__, __LINE__);
 }
 
 
