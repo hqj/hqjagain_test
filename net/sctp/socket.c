@@ -133,7 +133,7 @@ static inline void sctp_set_owner_w(struct sctp_chunk *chunk)
 
 	skb_set_owner_w(chunk->skb, sk);
 	
-	printk("skb %#llx : truesize %d, sk alloc %d %s %d\n", chunk->skb, chunk->skb->truesize,
+	printk("skb %#llx %#llx: truesize %d, sk alloc %d %s %d\n", chunk->skb, sk, chunk->skb->truesize,
 				refcount_read(&sk->sk_wmem_alloc), __func__, __LINE__);
 
 	chunk->skb->destructor = sctp_wfree;
@@ -145,7 +145,7 @@ static inline void sctp_set_owner_w(struct sctp_chunk *chunk)
 	sk->sk_wmem_queued += chunk->skb->truesize + sizeof(struct sctp_chunk);
 	sk_mem_charge(sk, chunk->skb->truesize);
 	
-	printk("skb %#llx : truesize %d, sk alloc %d %s %d\n", chunk->skb, chunk->skb->truesize,
+	printk("skb %#llx %#llx: truesize %d, sk alloc %d %s %d\n", chunk->skb, sk, chunk->skb->truesize,
 				refcount_read(&sk->sk_wmem_alloc), __func__, __LINE__);
 }
 
@@ -9089,13 +9089,13 @@ static void sctp_wfree(struct sk_buff *skb)
 	struct sctp_association *asoc = chunk->asoc;
 	struct sock *sk = asoc->base.sk;
 
-	printk("skb %#llx : truesize %d, sk alloc %d %s %d\n", skb, skb->truesize,
+	printk("skb %#llx %#llx: truesize %d, sk alloc %d %s %d\n", skb, sk, skb->truesize,
 					refcount_read(&sk->sk_wmem_alloc), __func__, __LINE__);
 	sk_mem_uncharge(sk, skb->truesize);
 	sk->sk_wmem_queued -= skb->truesize + sizeof(struct sctp_chunk);
 	asoc->sndbuf_used -= skb->truesize + sizeof(struct sctp_chunk);
 	WARN_ON(refcount_sub_and_test(sizeof(struct sctp_chunk), &sk->sk_wmem_alloc));
-	printk("skb %#llx : truesize %d, sk alloc %d %s %d\n", skb, skb->truesize,
+	printk("skb %#llx %#llx: truesize %d, sk alloc %d %s %d\n", skb, sk, skb->truesize,
 					refcount_read(&sk->sk_wmem_alloc), __func__, __LINE__);
 
 	if (chunk->shkey) {
@@ -9140,6 +9140,8 @@ void sctp_sock_rfree(struct sk_buff *skb)
 	 * Mimic the behavior of sock_rfree
 	 */
 	sk_mem_uncharge(sk, event->rmem_len);
+	printk("skb %#llx %#llx: truesize %d, rlen %d, sk alloc %d %s %d\n", skb, sk, skb->truesize,
+					event->rmen_len, refcount_read(&sk->sk_wmem_alloc), __func__, __LINE__);
 }
 
 
