@@ -9087,7 +9087,7 @@ static void sctp_wfree(struct sk_buff *skb)
 	sk->sk_wmem_queued -= skb->truesize + sizeof(struct sctp_chunk);
 	asoc->sndbuf_used -= skb->truesize + sizeof(struct sctp_chunk);
 	WARN_ON(refcount_sub_and_test(sizeof(struct sctp_chunk), &sk->sk_wmem_alloc));
-	printk("truesize %d, alloc %d %s\n", skb->truesize, refcount_read(sk->sk_wmem_alloc), __func__);
+	printk("truesize %d, alloc %d %s\n", skb->truesize, refcount_read(&sk->sk_wmem_alloc), __func__);
 
 	if (chunk->shkey) {
 		struct sctp_shared_key *shkey = chunk->shkey;
