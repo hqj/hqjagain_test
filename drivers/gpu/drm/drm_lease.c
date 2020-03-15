@@ -580,6 +580,8 @@ int drm_mode_create_lease_ioctl(struct drm_device *dev,
 	return 0;
 
 out_lessee:
+	printk("hqjagain: lessor %#llx. %s %d\n", lessor, __func__, __LINE__);
+	
 	drm_master_put(&lessee);
 	drm_master_put(&lessor);
 
