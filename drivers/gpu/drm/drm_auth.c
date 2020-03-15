@@ -328,6 +328,8 @@ static void drm_master_destroy(struct kref *kref)
 {
 	struct drm_master *master = container_of(kref, struct drm_master, refcount);
 	struct drm_device *dev = master->dev;
+	
+	printk("hqjagain: lessor %#llx. %s %d\n", master, __func__, __LINE__);
 
 	if (drm_core_check_feature(dev, DRIVER_MODESET))
 		drm_lease_destroy(master);
@@ -337,6 +339,8 @@ static void drm_master_destroy(struct kref *kref)
 
 	drm_legacy_master_rmmaps(dev, master);
 
+	printk("hqjagain: lessor %#llx. %s %d\n", master, __func__, __LINE__);
+	
 	idr_destroy(&master->magic_map);
 	idr_destroy(&master->leases);
 	idr_destroy(&master->lessee_idr);
