@@ -9087,7 +9087,7 @@ static void sctp_wfree(struct sk_buff *skb)
 {
 	struct sctp_chunk *chunk = skb_shinfo(skb)->destructor_arg;
 	struct sctp_association *asoc = chunk->asoc;
-	struct sock *sk = asoc->base.sk;
+	struct sock *sk = skb->sk;
 
 	printk("skb %#llx %#llx: truesize %d, sk alloc %d %s %d\n", skb, sk, skb->truesize,
 					refcount_read(&sk->sk_wmem_alloc), __func__, __LINE__);
