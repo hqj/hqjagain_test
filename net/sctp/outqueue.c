@@ -325,6 +325,8 @@ static void sctp_insert_list(struct list_head *head, struct list_head *new)
 
 	nchunk = list_entry(new, struct sctp_chunk, transmitted_list);
 	ntsn = ntohl(nchunk->subh.data_hdr->tsn);
+	
+	printk("queue %#llx, packet %#llx, %s, %d\n", head, nchunk->skb, __func__, __LINE__);
 
 	list_for_each(pos, head) {
 		lchunk = list_entry(pos, struct sctp_chunk, transmitted_list);
@@ -1429,6 +1431,8 @@ static void sctp_check_transmitted(struct sctp_outq *q,
 	while (NULL != (lchunk = sctp_list_dequeue(transmitted_queue))) {
 		tchunk = list_entry(lchunk, struct sctp_chunk,
 				    transmitted_list);
+		
+		printk("queue %#llx, chunk %#llx, packet %#llx, %s, %d\n", tchunk, transmitted_queue, tchunk->skb, __func__, __LINE__);
 
 		if (sctp_chunk_abandoned(tchunk)) {
 			/* Move the chunk to abandoned list. */
