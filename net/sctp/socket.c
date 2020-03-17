@@ -133,7 +133,7 @@ static inline void sctp_set_owner_w(struct sctp_chunk *chunk)
 
 	skb_set_owner_w(chunk->skb, sk);
 	
-	printk("skb %#llx %#llx: truesize %d, sk alloc %d %s %d\n", chunk->skb, sk, chunk->skb->truesize,
+	printk("[%d]skb %#llx %#llx: truesize %d, sk alloc %d %s %d\n", smp_processor_id(), chunk->skb, sk, chunk->skb->truesize,
 				refcount_read(&sk->sk_wmem_alloc), __func__, __LINE__);
 
 	chunk->skb->destructor = sctp_wfree;
@@ -144,9 +144,6 @@ static inline void sctp_set_owner_w(struct sctp_chunk *chunk)
 	asoc->sndbuf_used += chunk->skb->truesize + sizeof(struct sctp_chunk);
 	sk->sk_wmem_queued += chunk->skb->truesize + sizeof(struct sctp_chunk);
 	sk_mem_charge(sk, chunk->skb->truesize);
-	
-	printk("skb %#llx %#llx: truesize %d, sk alloc %d %s %d\n", chunk->skb, sk, chunk->skb->truesize,
-				refcount_read(&sk->sk_wmem_alloc), __func__, __LINE__);
 }
 
 static void sctp_clear_owner_w(struct sctp_chunk *chunk)
@@ -166,27 +163,27 @@ static void sctp_for_each_tx_datachunk(struct sctp_association *asoc,
 		list_for_each_entry(chunk, &t->transmitted, transmitted_list)
 			cb(chunk);
 	
-	printk("transmitted done %s, %d\n",  __func__, __LINE__);
+	printk("[%d]transmitted done %s, %d\n",smp_processor_id(),  __func__, __LINE__);
 
 	list_for_each_entry(chunk, &q->retransmit, transmitted_list)
 		cb(chunk);
 	
-	printk("retransmit done %s, %d\n",  __func__, __LINE__);
+	printk("[%d]retransmit done %s, %d\n", smp_processor_id(), __func__, __LINE__);
 
 	list_for_each_entry(chunk, &q->sacked, transmitted_list)
 		cb(chunk);
 	
-	printk("sacked done %s, %d\n",  __func__, __LINE__);
+	printk("[%d]sacked done %s, %d\n", smp_processor_id(), __func__, __LINE__);
 
 	list_for_each_entry(chunk, &q->abandoned, transmitted_list)
 		cb(chunk);
 
-	printk("abandoned done %s, %d\n",  __func__, __LINE__);
+	printk("[%d]abandoned done %s, %d\n", smp_processor_id(), __func__, __LINE__);
 	
 	list_for_each_entry(chunk, &q->out_chunk_list, list)
 		cb(chunk);
 	
-	printk("out_chunk_list done %s, %d\n",  __func__, __LINE__);
+	printk("[%d]out_chunk_list done %s, %d\n", smp_processor_id(), __func__, __LINE__);
 }
 
 static void sctp_for_each_rx_skb(struct sctp_association *asoc, struct sock *sk,
@@ -9100,14 +9097,12 @@ static void sctp_wfree(struct sk_buff *skb)
 	//struct sock *sk = skb->sk;
 	struct sock *sk = asoc->base.sk;
 
-	printk("skb %#llx %#llx: truesize %d, sk alloc %d %s %d\n", skb, sk, skb->truesize,
+	printk("[%d]skb %#llx %#llx: truesize %d, sk alloc %d %s %d\n", smp_processor_id(), skb, sk, skb->truesize,
 					refcount_read(&sk->sk_wmem_alloc), __func__, __LINE__);
 	sk_mem_uncharge(sk, skb->truesize);
 	sk->sk_wmem_queued -= skb->truesize + sizeof(struct sctp_chunk);
 	asoc->sndbuf_used -= skb->truesize + sizeof(struct sctp_chunk);
 	WARN_ON(refcount_sub_and_test(sizeof(struct sctp_chunk), &sk->sk_wmem_alloc));
-	printk("skb %#llx %#llx: truesize %d, sk alloc %d %s %d\n", skb, sk, skb->truesize,
-					refcount_read(&sk->sk_wmem_alloc), __func__, __LINE__);
 
 	if (chunk->shkey) {
 		struct sctp_shared_key *shkey = chunk->shkey;
@@ -9151,8 +9146,6 @@ void sctp_sock_rfree(struct sk_buff *skb)
 	 * Mimic the behavior of sock_rfree
 	 */
 	sk_mem_uncharge(sk, event->rmem_len);
-	printk("skb %#llx %#llx: truesize %d, rlen %d, sk alloc %d %s %d\n", skb, sk, skb->truesize,
-					event->rmem_len, refcount_read(&sk->sk_wmem_alloc), __func__, __LINE__);
 }
 
 
@@ -9596,12 +9589,12 @@ static int sctp_sock_migrate(struct sock *oldsk, struct sock *newsk,
 	 * The caller has just allocated newsk so we can guarantee that other
 	 * paths won't try to lock it and then oldsk.
 	 */
-	printk("before sk %s, %d\n", assoc->base.sk, __func__, __LINE__);
+	printk("[%d]before sk %#llx %s, %d\n", smp_processor_id(), assoc->base.sk, __func__, __LINE__);
 	lock_sock_nested(newsk, SINGLE_DEPTH_NESTING);
 	sctp_for_each_tx_datachunk(assoc, sctp_clear_owner_w);
 	sctp_assoc_migrate(assoc, newsk);
 	sctp_for_each_tx_datachunk(assoc, sctp_set_owner_w);
-	printk("after sk %s, %d\n", assoc->base.sk, __func__, __LINE__);
+	printk("[%d]after sk %#llx %s, %d\n", smp_processor_id(), assoc->base.sk, __func__, __LINE__);
 
 	/* If the association on the newsk is already closed before accept()
 	 * is called, set RCV_SHUTDOWN flag.
