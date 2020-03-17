@@ -1528,7 +1528,7 @@ static void sctp_check_transmitted(struct sctp_outq *q,
 				 */
 				restart_timer = 1;
 				forward_progress = true;
-
+				printk("[%d]put skb %#llx back. %s, %d\n", smp_processor_id(), tchunk->skb, __func__, __LINE__);
 				list_add_tail(&tchunk->transmitted_list,
 					      &q->sacked);
 			} else {
@@ -1547,6 +1547,7 @@ static void sctp_check_transmitted(struct sctp_outq *q,
 				 * older than that newly acknowledged DATA
 				 * chunk, are qualified as 'Stray DATA chunks'.
 				 */
+				printk("[%d]put skb %#llx back. %s, %d\n", smp_processor_id(), tchunk->skb, __func__, __LINE__);
 				list_add_tail(lchunk, &tlist);
 			}
 		} else {
@@ -1571,6 +1572,7 @@ static void sctp_check_transmitted(struct sctp_outq *q,
 				restart_timer = 1;
 			}
 
+			printk("[%d]put skb %#llx back. %s, %d\n", smp_processor_id(), tchunk->skb, __func__, __LINE__);
 			list_add_tail(lchunk, &tlist);
 		}
 	}
