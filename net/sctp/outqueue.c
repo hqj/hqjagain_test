@@ -228,6 +228,8 @@ static void __sctp_outq_teardown(struct sctp_outq *q)
 		list_del_init(lchunk);
 		chunk = list_entry(lchunk, struct sctp_chunk,
 				   transmitted_list);
+		printk("[%d]sacked %#llx skb %#llx  %s, %d\n", raw_smp_processor_id(),
+				&q->sacked, chunk->skb, __func__, __LINE__);
 		sctp_chunk_fail(chunk, q->error);
 		sctp_chunk_free(chunk);
 	}
@@ -1349,8 +1351,12 @@ int sctp_outq_sack(struct sctp_outq *q, struct sctp_chunk *chunk)
 	list_for_each_safe(lchunk, temp, &q->sacked) {
 		tchunk = list_entry(lchunk, struct sctp_chunk,
 				    transmitted_list);
+		printk("[%d]sacked %#llx skb %#llx  %s, %d\n", raw_smp_processor_id(),
+				&q->sacked, tchunk->skb, __func__, __LINE__);
 		tsn = ntohl(tchunk->subh.data_hdr->tsn);
 		if (TSN_lte(tsn, ctsn)) {
+			printk("[%d]sacked %#llx skb %#llx  %s, %d\n", raw_smp_processor_id(),
+				&q->sacked, tchunk->skb, __func__, __LINE__);
 			list_del_init(&tchunk->transmitted_list);
 			if (asoc->peer.prsctp_capable &&
 			    SCTP_PR_PRIO_ENABLED(chunk->sinfo.sinfo_flags))
@@ -1532,7 +1538,8 @@ static void sctp_check_transmitted(struct sctp_outq *q,
 				 */
 				restart_timer = 1;
 				forward_progress = true;
-				printk("[%d]put %#llx %s, %d\n", raw_smp_processor_id(), tchunk->skb, __func__, __LINE__);
+				printk("[%d]sacked %#llx skb %#llx  %s, %d\n", raw_smp_processor_id(),
+				&q->sacked, tchunk->skb, __func__, __LINE__);
 				list_add_tail(&tchunk->transmitted_list,
 					      &q->sacked);
 			} else {
