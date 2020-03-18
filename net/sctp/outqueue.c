@@ -212,7 +212,7 @@ static void __sctp_outq_teardown(struct sctp_outq *q)
 	/* Throw away unacknowledged chunks. */
 	list_for_each_entry(transport, &q->asoc->peer.transport_addr_list,
 			transports) {
-		printk("[%d]deal with transmitted %#llx from transport %#llx  %s, %d\n", raw_smp_processor_id(),
+		printk("[%d] %#llx %#llx %s, %d\n", raw_smp_processor_id(),
 				&transport->transmitted, transport, __func__, __LINE__);
 		while ((lchunk = sctp_list_dequeue(&transport->transmitted)) != NULL) {
 			chunk = list_entry(lchunk, struct sctp_chunk,
@@ -328,7 +328,7 @@ static void sctp_insert_list(struct list_head *head, struct list_head *new)
 	nchunk = list_entry(new, struct sctp_chunk, transmitted_list);
 	ntsn = ntohl(nchunk->subh.data_hdr->tsn);
 	
-	printk("queue %#llx, packet %#llx, %s, %d\n", head, nchunk->skb, __func__, __LINE__);
+	printk("%#llx, %#llx, %s, %d\n", head, nchunk->skb, __func__, __LINE__);
 
 	list_for_each(pos, head) {
 		lchunk = list_entry(pos, struct sctp_chunk, transmitted_list);
@@ -1434,7 +1434,7 @@ static void sctp_check_transmitted(struct sctp_outq *q,
 		tchunk = list_entry(lchunk, struct sctp_chunk,
 				    transmitted_list);
 		
-		printk("[%d]get packet %#llx from queue %#llx  %s, %d\n", raw_smp_processor_id(), tchunk->skb, transmitted_queue, __func__, __LINE__);
+		printk("[%d]get %#llx %#llx  %s, %d\n", raw_smp_processor_id(), tchunk->skb, transmitted_queue, __func__, __LINE__);
 
 		if (sctp_chunk_abandoned(tchunk)) {
 			/* Move the chunk to abandoned list. */
@@ -1530,7 +1530,7 @@ static void sctp_check_transmitted(struct sctp_outq *q,
 				 */
 				restart_timer = 1;
 				forward_progress = true;
-				printk("[%d]put skb %#llx back. %s, %d\n", raw_smp_processor_id(), tchunk->skb, __func__, __LINE__);
+				printk("[%d]put %#llx %s, %d\n", raw_smp_processor_id(), tchunk->skb, __func__, __LINE__);
 				list_add_tail(&tchunk->transmitted_list,
 					      &q->sacked);
 			} else {
@@ -1549,7 +1549,7 @@ static void sctp_check_transmitted(struct sctp_outq *q,
 				 * older than that newly acknowledged DATA
 				 * chunk, are qualified as 'Stray DATA chunks'.
 				 */
-				printk("[%d]put skb %#llx back. %s, %d\n", raw_smp_processor_id(), tchunk->skb, __func__, __LINE__);
+				printk("[%d]put %#llx %s, %d\n", raw_smp_processor_id(), tchunk->skb, __func__, __LINE__);
 				list_add_tail(lchunk, &tlist);
 			}
 		} else {
@@ -1574,7 +1574,7 @@ static void sctp_check_transmitted(struct sctp_outq *q,
 				restart_timer = 1;
 			}
 
-			printk("[%d]put skb %#llx back. %s, %d\n", raw_smp_processor_id(), tchunk->skb, __func__, __LINE__);
+			printk("[%d]put %#llx %s, %d\n", raw_smp_processor_id(), tchunk->skb, __func__, __LINE__);
 			list_add_tail(lchunk, &tlist);
 		}
 	}
@@ -1680,7 +1680,7 @@ static void sctp_check_transmitted(struct sctp_outq *q,
 				sctp_transport_dst_confirm(transport);
 		}
 	}
-	printk("[%d]put back to queue %#llx %s, %d\n", raw_smp_processor_id(), transmitted_queue, __func__, __LINE__);
+	printk("[%d]put %#llx %s, %d\n", raw_smp_processor_id(), transmitted_queue, __func__, __LINE__);
 	list_splice(&tlist, transmitted_queue);
 }
 
