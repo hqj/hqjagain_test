@@ -170,8 +170,11 @@ static void sctp_for_each_tx_datachunk(struct sctp_association *asoc,
 		cb(chunk);
 	
 
-	list_for_each_entry(chunk, &q->sacked, transmitted_list)
+	list_for_each_entry(chunk, &q->sacked, transmitted_list) {
+		printk("[%d]sacked %#llx skb %#llx  %s, %d\n", raw_smp_processor_id(),
+				&q->sacked, chunk->skb, __func__, __LINE__);
 		cb(chunk);
+	}
 	
 
 	list_for_each_entry(chunk, &q->abandoned, transmitted_list)
