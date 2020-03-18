@@ -1302,6 +1302,7 @@ int sctp_outq_sack(struct sctp_outq *q, struct sctp_chunk *chunk)
 	/* Run through the retransmit queue.  Credit bytes received
 	 * and free those chunks that we can.
 	 */
+	printk("[%d]trans %#llx %#llx  %s, %d\n", raw_smp_processor_id(), q, &q->retransmit, __func__, __LINE__);
 	sctp_check_transmitted(q, &q->retransmit, NULL, NULL, sack, &highest_new_tsn);
 
 	/* Run through the transmitted queue.
@@ -1310,6 +1311,7 @@ int sctp_outq_sack(struct sctp_outq *q, struct sctp_chunk *chunk)
 	 * This is a MASSIVE candidate for optimization.
 	 */
 	list_for_each_entry(transport, transport_list, transports) {
+		printk("[%d]trans %#llx %#llx  %s, %d\n", raw_smp_processor_id(), q, &transport->transmitted, __func__, __LINE__);
 		sctp_check_transmitted(q, &transport->transmitted,
 				       transport, &chunk->source, sack,
 				       &highest_new_tsn);
