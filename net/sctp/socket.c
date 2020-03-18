@@ -133,7 +133,7 @@ static inline void sctp_set_owner_w(struct sctp_chunk *chunk)
 
 	skb_set_owner_w(chunk->skb, sk);
 	
-	printk("[%d]skb %#llx %#llx: truesize %d, sk alloc %d %s %d\n", raw_smp_processor_id(), chunk->skb, sk, chunk->skb->truesize,
+	printk("[%d]skb %#llx %#llx , sk alloc %d %s %d\n", raw_smp_processor_id(), chunk->skb, sk,
 				refcount_read(&sk->sk_wmem_alloc), __func__, __LINE__);
 
 	chunk->skb->destructor = sctp_wfree;
@@ -163,27 +163,22 @@ static void sctp_for_each_tx_datachunk(struct sctp_association *asoc,
 		list_for_each_entry(chunk, &t->transmitted, transmitted_list)
 			cb(chunk);
 	
-	printk("[%d]transmitted done queue %#llx %s, %d\n",raw_smp_processor_id(),  &t->transmitted, __func__, __LINE__);
+	printk("[%d]transmitted %#llx %s, %d\n",raw_smp_processor_id(),  &t->transmitted, __func__, __LINE__);
 
 	list_for_each_entry(chunk, &q->retransmit, transmitted_list)
 		cb(chunk);
 	
-	printk("[%d]retransmit done queue %#llx %s, %d\n", raw_smp_processor_id(), &q->retransmit, __func__, __LINE__);
 
 	list_for_each_entry(chunk, &q->sacked, transmitted_list)
 		cb(chunk);
 	
-	printk("[%d]sacked done queue %#llx %s, %d\n", raw_smp_processor_id(), &q->sacked, __func__, __LINE__);
 
 	list_for_each_entry(chunk, &q->abandoned, transmitted_list)
 		cb(chunk);
 
-	printk("[%d]abandoned done queue %#llx %s, %d\n", raw_smp_processor_id(), &q->abandoned, __func__, __LINE__);
 	
 	list_for_each_entry(chunk, &q->out_chunk_list, list)
 		cb(chunk);
-	
-	printk("[%d]out_chunk_list done queue %#llx %s, %d\n", raw_smp_processor_id(), &q->out_chunk_list, __func__, __LINE__);
 }
 
 static void sctp_for_each_rx_skb(struct sctp_association *asoc, struct sock *sk,
@@ -9097,7 +9092,7 @@ static void sctp_wfree(struct sk_buff *skb)
 	//struct sock *sk = skb->sk;
 	struct sock *sk = asoc->base.sk;
 
-	printk("[%d]skb %#llx %#llx: truesize %d, sk alloc %d %s %d real sk %#llx\n", raw_smp_processor_id(), skb, sk, skb->truesize,
+	printk("[%d]skb %#llx %#llx size %d %s %d real sk %#llx\n", raw_smp_processor_id(), skb, sk,
 					refcount_read(&sk->sk_wmem_alloc), __func__, __LINE__, skb->sk);
 	sk_mem_uncharge(sk, skb->truesize);
 	sk->sk_wmem_queued -= skb->truesize + sizeof(struct sctp_chunk);
