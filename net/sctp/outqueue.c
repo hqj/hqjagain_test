@@ -716,6 +716,8 @@ redo:
 			/* The append was successful, so add this chunk to
 			 * the transmitted list.
 			 */
+			printk("[%d]list %#llx skb %#llx  %s, %d\n", raw_smp_processor_id(),
+				&transport->transmitted, chunk->skb, __func__, __LINE__);
 			list_move_tail(&chunk->transmitted_list,
 				       &transport->transmitted);
 
