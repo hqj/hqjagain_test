@@ -25,6 +25,7 @@
  */
 
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+#define DEBUG
 
 #include <linux/types.h>
 #include <linux/list.h>   /* For struct list_head */
@@ -1087,7 +1088,7 @@ static void sctp_outq_flush_data(struct sctp_flush_ctx *ctx,
 
 		sctp_outq_select_transport(ctx, chunk);
 
-		pr_debug("%s: outq:%p, chunk:%p[%s], tx-tsn:0x%x skb->head:%p skb->users:%d\n",
+		printk("%s: outq:%p, chunk:%p[%s], tx-tsn:0x%x skb->head:%p skb->users:%d\n",
 			 __func__, ctx->q, chunk, chunk && chunk->chunk_hdr ?
 			 sctp_cname(SCTP_ST_CHUNK(chunk->chunk_hdr->type)) :
 			 "illegal chunk", ntohl(chunk->subh.data_hdr->tsn),
@@ -1105,6 +1106,8 @@ static void sctp_outq_flush_data(struct sctp_flush_ctx *ctx,
 				 __func__, ntohl(chunk->subh.data_hdr->tsn),
 				 status);
 
+			printk("[%d]list %#llx skb %#llx  %s, %d\n", raw_smp_processor_id(),
+				ctx->q, chunk->skb, __func__, __LINE__);
 			sctp_outq_head_data(ctx->q, chunk);
 			break;
 		}
@@ -1125,6 +1128,8 @@ static void sctp_outq_flush_data(struct sctp_flush_ctx *ctx,
 		 */
 		sctp_sched_dequeue_done(ctx->q, chunk);
 
+		printk("[%d]list %#llx skb %#llx  %s, %d\n", raw_smp_processor_id(),
+				&ctx->transport->transmitted, chunk->skb, __func__, __LINE__);
 		list_add_tail(&chunk->transmitted_list,
 			      &ctx->transport->transmitted);
 
