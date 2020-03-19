@@ -217,7 +217,7 @@ static void __sctp_outq_teardown(struct sctp_outq *q)
 			chunk = list_entry(lchunk, struct sctp_chunk,
 					   transmitted_list);
 			/* Mark as part of a failed message. */
-			printk("[%d] %#llx %#llx skb %s, %d\n", raw_smp_processor_id(),
+			printk("[%d] %#llx %#llx skb %#llx %s, %d\n", raw_smp_processor_id(),
 				&transport->transmitted, transport, chunk->skb, __func__, __LINE__);
 			sctp_chunk_fail(chunk, q->error);
 			sctp_chunk_free(chunk);
@@ -240,6 +240,8 @@ static void __sctp_outq_teardown(struct sctp_outq *q)
 		list_del_init(lchunk);
 		chunk = list_entry(lchunk, struct sctp_chunk,
 				   transmitted_list);
+		printk("[%d]retran %#llx skb %#llx  %s, %d\n", raw_smp_processor_id(),
+				&q->retransmit, chunk->skb, __func__, __LINE__);
 		sctp_chunk_fail(chunk, q->error);
 		sctp_chunk_free(chunk);
 	}
@@ -249,6 +251,8 @@ static void __sctp_outq_teardown(struct sctp_outq *q)
 		list_del_init(lchunk);
 		chunk = list_entry(lchunk, struct sctp_chunk,
 				   transmitted_list);
+		printk("[%d]aband %#llx skb %#llx  %s, %d\n", raw_smp_processor_id(),
+				&q->abandoned, chunk->skb, __func__, __LINE__);
 		sctp_chunk_fail(chunk, q->error);
 		sctp_chunk_free(chunk);
 	}
@@ -256,7 +260,8 @@ static void __sctp_outq_teardown(struct sctp_outq *q)
 	/* Throw away any leftover data chunks. */
 	while ((chunk = sctp_outq_dequeue_data(q)) != NULL) {
 		sctp_sched_dequeue_done(q, chunk);
-
+		printk("[%d]dequeue skb %#llx  %s, %d\n", raw_smp_processor_id(),
+				chunk->skb, __func__, __LINE__);
 		/* Mark as send failure. */
 		sctp_chunk_fail(chunk, q->error);
 		sctp_chunk_free(chunk);
@@ -265,6 +270,8 @@ static void __sctp_outq_teardown(struct sctp_outq *q)
 	/* Throw away any leftover control chunks. */
 	list_for_each_entry_safe(chunk, tmp, &q->control_chunk_list, list) {
 		list_del_init(&chunk->list);
+		printk("[%d]ctl skb %#llx  %s, %d\n", raw_smp_processor_id(),
+				chunk->skb, __func__, __LINE__);
 		sctp_chunk_free(chunk);
 	}
 }
