@@ -9099,6 +9099,10 @@ static void sctp_wfree(struct sk_buff *skb)
 
 	printk("[%d]skb %#llx %#llx size %d %s %d real sk %#llx\n", raw_smp_processor_id(), skb, sk,
 					refcount_read(&sk->sk_wmem_alloc), __func__, __LINE__, skb->sk);
+	
+	if (sk != skb->sk)
+		dump_stack();
+	
 	sk_mem_uncharge(sk, skb->truesize);
 	sk->sk_wmem_queued -= skb->truesize + sizeof(struct sctp_chunk);
 	asoc->sndbuf_used -= skb->truesize + sizeof(struct sctp_chunk);
