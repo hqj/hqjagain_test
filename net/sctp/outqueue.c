@@ -649,6 +649,8 @@ static int __sctp_outq_flush_rtx(struct sctp_outq *q, struct sctp_packet *pkt,
 		 * next chunk.
 		 */
 		if (chunk->tsn_gap_acked) {
+			printk("[%d]list %#llx skb %#llx  %s, %d\n", raw_smp_processor_id(),
+				&transport->transmitted, chunk->skb, __func__, __LINE__);
 			list_move_tail(&chunk->transmitted_list,
 				       &transport->transmitted);
 			continue;
