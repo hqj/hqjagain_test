@@ -161,9 +161,10 @@ static void sctp_for_each_tx_datachunk(struct sctp_association *asoc,
 
 	list_for_each_entry(t, &asoc->peer.transport_addr_list, transports)
 	{
-		printk("[%d]%#llx transmitted %#llx %s, %d\n",raw_smp_processor_id(),  q, &t->transmitted, __func__, __LINE__);
-		list_for_each_entry(chunk, &t->transmitted, transmitted_list)
+		list_for_each_entry(chunk, &t->transmitted, transmitted_list) {
+			printk("[%d]%#llx transmitted %#llx skb %#llx %s, %d\n",raw_smp_processor_id(),  q, &t->transmitted, chunk-skb, __func__, __LINE__);
 			cb(chunk);
+		}
 	}
 
 	list_for_each_entry(chunk, &q->retransmit, transmitted_list)
