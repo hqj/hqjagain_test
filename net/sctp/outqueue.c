@@ -213,12 +213,12 @@ static void __sctp_outq_teardown(struct sctp_outq *q)
 	/* Throw away unacknowledged chunks. */
 	list_for_each_entry(transport, &q->asoc->peer.transport_addr_list,
 			transports) {
-		printk("[%d] %#llx %#llx %s, %d\n", raw_smp_processor_id(),
-				&transport->transmitted, transport, __func__, __LINE__);
 		while ((lchunk = sctp_list_dequeue(&transport->transmitted)) != NULL) {
 			chunk = list_entry(lchunk, struct sctp_chunk,
 					   transmitted_list);
 			/* Mark as part of a failed message. */
+			printk("[%d] %#llx %#llx skb %s, %d\n", raw_smp_processor_id(),
+				&transport->transmitted, transport, chunk->skb, __func__, __LINE__);
 			sctp_chunk_fail(chunk, q->error);
 			sctp_chunk_free(chunk);
 		}
