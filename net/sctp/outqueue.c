@@ -1379,6 +1379,8 @@ int sctp_outq_sack(struct sctp_outq *q, struct sctp_chunk *chunk)
 				asoc->sent_cnt_removable--;
 			sctp_chunk_free(tchunk);
 		}
+		printk("[%d]freed %#llx %s, %d\n", raw_smp_processor_id(),
+				&q->sacked, __func__, __LINE__);
 	}
 
 	/* ii) Set rwnd equal to the newly received a_rwnd minus the
