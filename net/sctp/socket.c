@@ -151,39 +151,57 @@ static void sctp_clear_owner_w(struct sctp_chunk *chunk)
 	skb_orphan(chunk->skb);
 }
 
-static void sctp_for_each_tx_datachunk(struct sctp_association *asoc,
+static int sctp_msg_insert(struct rb_root *root, struct sctp_datamsg *msg)
+{
+	struct rb_node **new = &(root->rb_node), *parent = NULL;
+
+	while (*new) {
+		struct sctp_datamsg *this = container_of(*new, struct sctp_datamsg, rb);
+
+		if (msg < this)
+			new = &((*new)->rb_left);
+		else if (msg > this)
+			new = &((*new)->rb_right);
+		else
+			return -EEXIST;
+	}
+
+	rb_link_node(&msg->rb, parent, new);
+	rb_insert_color(&msg->rb, root);
+
+	return 0;
+}
+
+static void sctp_for_each_tx_datamsg(struct sctp_association *asoc,
 				       void (*cb)(struct sctp_chunk *))
 
 {
 	struct sctp_outq *q = &asoc->outqueue;
+	struct rb_root msg_list = RB_ROOT;
 	struct sctp_transport *t;
 	struct sctp_chunk *chunk;
+	struct sctp_datamsg *msg;
+	struct rb_node *node;
 
 	list_for_each_entry(t, &asoc->peer.transport_addr_list, transports)
-	{
-		list_for_each_entry(chunk, &t->transmitted, transmitted_list) {
-			printk("[%d]%#llx transmitted %#llx skb %#llx %s, %d\n",raw_smp_processor_id(),  q, &t->transmitted, chunk->skb, __func__, __LINE__);
-			cb(chunk);
-		}
-	}
+		list_for_each_entry(chunk, &t->transmitted, transmitted_list)
+			sctp_msg_insert(&msg_list, chunk->msg);
 
 	list_for_each_entry(chunk, &q->retransmit, transmitted_list)
-		cb(chunk);
-	
+		sctp_msg_insert(&msg_list, chunk->msg);
 
-	list_for_each_entry(chunk, &q->sacked, transmitted_list) {
-		printk("[%d]sacked %#llx skb %#llx  %s, %d\n", raw_smp_processor_id(),
-				&q->sacked, chunk->skb, __func__, __LINE__);
-		cb(chunk);
-	}
-	
+	list_for_each_entry(chunk, &q->sacked, transmitted_list)
+		sctp_msg_insert(&msg_list, chunk->msg);
 
 	list_for_each_entry(chunk, &q->abandoned, transmitted_list)
-		cb(chunk);
+		sctp_msg_insert(&msg_list, chunk->msg);
 
-	
 	list_for_each_entry(chunk, &q->out_chunk_list, list)
-		cb(chunk);
+		sctp_msg_insert(&msg_list, chunk->msg);
+
+	for (node = rb_first(&msg_list); node; node = rb_next(node))
+		list_for_each_entry(chunk, &msg->chunks, frag_list)
+			cb(chunk);
 }
 
 static void sctp_for_each_rx_skb(struct sctp_association *asoc, struct sock *sk,
@@ -9595,9 +9613,9 @@ static int sctp_sock_migrate(struct sock *oldsk, struct sock *newsk,
 	 */
 	printk("[%d]before sk %#llx %s, %d\n", raw_smp_processor_id(), assoc->base.sk, __func__, __LINE__);
 	lock_sock_nested(newsk, SINGLE_DEPTH_NESTING);
-	sctp_for_each_tx_datachunk(assoc, sctp_clear_owner_w);
+	sctp_for_each_tx_datamsg(assoc, sctp_clear_owner_w);
 	sctp_assoc_migrate(assoc, newsk);
-	sctp_for_each_tx_datachunk(assoc, sctp_set_owner_w);
+	sctp_for_each_tx_datamsg(assoc, sctp_set_owner_w);
 	printk("[%d]after sk %#llx %s, %d\n", raw_smp_processor_id(), assoc->base.sk, __func__, __LINE__);
 
 	/* If the association on the newsk is already closed before accept()
