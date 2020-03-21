@@ -46,6 +46,7 @@
 #include <linux/sctp.h>		/* We need sctp* header structs.  */
 #include <net/sctp/auth.h>	/* We need auth specific structs */
 #include <net/ip.h>		/* For inet_skb_parm */
+#include <linux/rbtree.h>
 
 /* A convenience structure for handling sockaddr structures.
  * We should wean ourselves off this.
@@ -526,6 +527,8 @@ struct sctp_datamsg {
 	refcount_t refcnt;
 	/* When is this message no longer interesting to the peer? */
 	unsigned long expires_at;
+	/* For sock migrate, used to iterate over msg list. */
+	struct rb_node rb;
 	/* Did the messenge fail to send? */
 	int send_error;
 	u8 send_failed:1,
