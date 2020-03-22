@@ -194,6 +194,7 @@ void sctp_outq_init(struct sctp_association *asoc, struct sctp_outq *q)
 
 	q->asoc = asoc;
 	INIT_LIST_HEAD(&q->out_chunk_list);
+	INIT_LIST_HEAD(&q->out_msg_list);
 	INIT_LIST_HEAD(&q->control_chunk_list);
 	INIT_LIST_HEAD(&q->retransmit);
 	INIT_LIST_HEAD(&q->sacked);
