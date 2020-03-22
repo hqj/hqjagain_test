@@ -176,6 +176,7 @@ static void sctp_for_each_tx_datamsg(struct sctp_association *asoc,
 	struct rb_root msg_list = RB_ROOT;
 	struct sctp_transport *t;
 	struct sctp_chunk *chunk;
+	struct sctp_datamsg *msg;
 	struct rb_node *node;
 
 	list_for_each_entry(t, &asoc->peer.transport_addr_list, transports)
@@ -194,9 +195,11 @@ static void sctp_for_each_tx_datamsg(struct sctp_association *asoc,
 	list_for_each_entry(chunk, &q->out_chunk_list, list)
 		sctp_msg_insert(&msg_list, chunk->msg);
 
-	for (node = rb_first(&msg_list); node; node = rb_next(node))
+	for (node = rb_first(&msg_list); node; node = rb_next(node)) {
+		msg = rb_entry(node, struct sctp_datamsg, rb);
 		list_for_each_entry(chunk, &msg->chunks, frag_list)
 			cb(chunk);
+	}
 }
 
 static void sctp_for_each_rx_skb(struct sctp_association *asoc, struct sock *sk,
