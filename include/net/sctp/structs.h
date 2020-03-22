@@ -522,6 +522,8 @@ struct sctp_pf {
 struct sctp_datamsg {
 	/* Chunks waiting to be submitted to lower layer. */
 	struct list_head chunks;
+	/* List in outq. */
+	struct list_head list;
 	/* Reference counting. */
 	refcount_t refcnt;
 	/* When is this message no longer interesting to the peer? */
@@ -1062,6 +1064,9 @@ struct sctp_outq {
 
 	/* Data pending that has never been transmitted.  */
 	struct list_head out_chunk_list;
+	
+	/* Data msg list. */
+	struct list_head out_msg_list;
 
 	/* Stream scheduler being used */
 	struct sctp_sched_ops *sched;
