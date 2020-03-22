@@ -154,6 +154,8 @@ static void sctp_clear_owner_w(struct sctp_chunk *chunk)
 static int sctp_msg_insert(struct rb_root *root, struct sctp_datamsg *msg)
 {
 	struct rb_node **new = &(root->rb_node), *parent = NULL;
+	
+	printk("inserting %#llx. %s %d\n", msg, __func__, __LINE__);
 
 	while (*new) {
 		struct sctp_datamsg *this = container_of(*new, struct sctp_datamsg, rb);
@@ -166,6 +168,7 @@ static int sctp_msg_insert(struct rb_root *root, struct sctp_datamsg *msg)
 			return -EEXIST;
 	}
 
+	printk("inserted %#llx. %s %d\n", msg, __func__, __LINE__);
 	rb_link_node(&msg->rb, parent, new);
 	rb_insert_color(&msg->rb, root);
 
@@ -201,7 +204,10 @@ static void sctp_for_each_tx_datamsg(struct sctp_association *asoc,
 
 	for (node = rb_first(&msg_list); node; node = rb_next(node))
 		list_for_each_entry(chunk, &msg->chunks, frag_list)
+	{
+		printk("%#llx %s %d\n", chunk->skb, __func__, __LINE__);
 			cb(chunk);
+	}
 }
 
 static void sctp_for_each_rx_skb(struct sctp_association *asoc, struct sock *sk,
