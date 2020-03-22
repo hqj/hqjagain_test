@@ -1099,6 +1099,7 @@ static void sctp_cmd_send_msg(struct sctp_association *asoc,
 	list_for_each_entry(chunk, &msg->chunks, frag_list)
 		sctp_outq_tail(&asoc->outqueue, chunk, gfp);
 
+	list_add_tail(&msg->list, &asoc->outqueue.out_msg_list);
 	asoc->outqueue.sched->enqueue(&asoc->outqueue, msg);
 }
 
