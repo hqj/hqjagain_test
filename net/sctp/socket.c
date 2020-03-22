@@ -147,29 +147,16 @@ static void sctp_clear_owner_w(struct sctp_chunk *chunk)
 	skb_orphan(chunk->skb);
 }
 
-static void sctp_for_each_tx_datachunk(struct sctp_association *asoc,
+static void sctp_for_each_tx_datamsg(struct sctp_association *asoc,
 				       void (*cb)(struct sctp_chunk *))
 
 {
-	struct sctp_outq *q = &asoc->outqueue;
-	struct sctp_transport *t;
 	struct sctp_chunk *chunk;
+	struct sctp_datamsg *msg;
 
-	list_for_each_entry(t, &asoc->peer.transport_addr_list, transports)
-		list_for_each_entry(chunk, &t->transmitted, transmitted_list)
+	list_for_each_entry(msg, &asoc->outqueue.out_msg_list, list)
+		list_for_each_entry(chunk, &msg->chunks, frag_list)
 			cb(chunk);
-
-	list_for_each_entry(chunk, &q->retransmit, transmitted_list)
-		cb(chunk);
-
-	list_for_each_entry(chunk, &q->sacked, transmitted_list)
-		cb(chunk);
-
-	list_for_each_entry(chunk, &q->abandoned, transmitted_list)
-		cb(chunk);
-
-	list_for_each_entry(chunk, &q->out_chunk_list, list)
-		cb(chunk);
 }
 
 static void sctp_for_each_rx_skb(struct sctp_association *asoc, struct sock *sk,
@@ -9574,9 +9561,9 @@ static int sctp_sock_migrate(struct sock *oldsk, struct sock *newsk,
 	 * paths won't try to lock it and then oldsk.
 	 */
 	lock_sock_nested(newsk, SINGLE_DEPTH_NESTING);
-	sctp_for_each_tx_datachunk(assoc, sctp_clear_owner_w);
+	sctp_for_each_tx_datamsg(assoc, sctp_clear_owner_w);
 	sctp_assoc_migrate(assoc, newsk);
-	sctp_for_each_tx_datachunk(assoc, sctp_set_owner_w);
+	sctp_for_each_tx_datamsg(assoc, sctp_set_owner_w);
 
 	/* If the association on the newsk is already closed before accept()
 	 * is called, set RCV_SHUTDOWN flag.
