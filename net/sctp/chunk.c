@@ -41,6 +41,7 @@ static void sctp_datamsg_init(struct sctp_datamsg *msg)
 	msg->abandoned = 0;
 	msg->expires_at = 0;
 	INIT_LIST_HEAD(&msg->chunks);
+	INIT_LIST_HEAD(&msg->list);
 }
 
 /* Allocate and initialize datamsg. */
@@ -110,6 +111,8 @@ static void sctp_datamsg_destroy(struct sctp_datamsg *msg)
 
 		sctp_chunk_put(chunk);
 	}
+	if (!list_empty(&msg->list))
+		list_del_init(&msg->list);
 
 	SCTP_DBG_OBJCNT_DEC(datamsg);
 	kfree(msg);
