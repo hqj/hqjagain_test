@@ -872,6 +872,9 @@ static ssize_t smk_set_cipso(struct file *file, const char __user *buf,
 		rc = PTR_ERR(skp);
 		goto out;
 	}
+	
+	printk("debug: count %d, length %d, smk_known %s, %s %d\n", count, strlen(skp->smk_known),
+	      skp->smk_known, __func__, __LINE__);
 
 	if (format == SMK_FIXED24_FMT)
 		rule += SMK_LABELLEN;
