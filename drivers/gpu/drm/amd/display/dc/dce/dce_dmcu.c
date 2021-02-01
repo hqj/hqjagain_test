@@ -99,7 +99,7 @@ bool dce_dmcu_load_iram(struct dmcu *dmcu,
 	return true;
 }
 
-static void dce_get_dmcu_psr_state(struct dmcu *dmcu, uint32_t *psr_state)
+static void dce_get_dmcu_psr_state(struct dmcu *dmcu, enum dc_psr_state *state)
 {
 	struct dce_dmcu *dmcu_dce = TO_DCE_DMCU(dmcu);
 
@@ -114,7 +114,7 @@ static void dce_get_dmcu_psr_state(struct dmcu *dmcu, uint32_t *psr_state)
 	REG_WRITE(DMCU_IRAM_RD_CTRL, psr_state_offset);
 
 	/* Read data from IRAM_RD_DATA in DMCU_IRAM_RD_DATA*/
-	*psr_state = REG_READ(DMCU_IRAM_RD_DATA);
+	*state = (enum dc_psr_state)REG_READ(DMCU_IRAM_RD_DATA);
 
 	/* Disable write access to IRAM after finished using IRAM
 	 * in order to allow dynamic sleep state
@@ -129,7 +129,7 @@ static void dce_dmcu_set_psr_enable(struct dmcu *dmcu, bool enable, bool wait)
 	unsigned int dmcu_wait_reg_ready_interval = 100;
 
 	unsigned int retryCount;
-	uint32_t psr_state = 0;
+	enum dc_psr_state state = PSR_STATE0;
 
 	/* waitDMCUReadyForCmd */
 	REG_WAIT(MASTER_COMM_CNTL_REG, MASTER_COMM_INTERRUPT, 0,
@@ -148,12 +148,12 @@ static void dce_dmcu_set_psr_enable(struct dmcu *dmcu, bool enable, bool wait)
 	REG_UPDATE(MASTER_COMM_CNTL_REG, MASTER_COMM_INTERRUPT, 1);
 	if (wait == true) {
 		for (retryCount = 0; retryCount <= 100; retryCount++) {
-			dce_get_dmcu_psr_state(dmcu, &psr_state);
+			dce_get_dmcu_psr_state(dmcu, &state);
 			if (enable) {
-				if (psr_state != 0)
+				if (state != PSR_STATE0)
 					break;
 			} else {
-				if (psr_state == 0)
+				if (state == PSR_STATE0)
 					break;
 			}
 			udelay(10);
@@ -378,6 +378,11 @@ static bool dcn10_dmcu_init(struct dmcu *dmcu)
 	struct dce_dmcu *dmcu_dce = TO_DCE_DMCU(dmcu);
 	const struct dc_config *config = &dmcu->ctx->dc->config;
 	bool status = false;
+	struct dc_context *ctx = dmcu->ctx;
+	unsigned int i;
+	//  5 4 3 2 1 0
+	//  F E D C B A - bit 0 is A, bit 5 is F
+	unsigned int tx_interrupt_mask = 0;
 
 	PERF_TRACE();
 	/*  Definition of DC_DMCU_SCRATCH
@@ -386,6 +391,15 @@ static bool dcn10_dmcu_init(struct dmcu *dmcu)
 	 *  2 : Firmware already initialized
 	 */
 	dmcu->dmcu_state = REG_READ(DC_DMCU_SCRATCH);
+
+	for (i = 0; i < ctx->dc->link_count; i++) {
+		if (ctx->dc->links[i]->link_enc->features.flags.bits.DP_IS_USB_C) {
+			if (ctx->dc->links[i]->link_enc->transmitter >= TRANSMITTER_UNIPHY_A &&
+					ctx->dc->links[i]->link_enc->transmitter <= TRANSMITTER_UNIPHY_F) {
+				tx_interrupt_mask |= 1 << ctx->dc->links[i]->link_enc->transmitter;
+			}
+		}
+	}
 
 	switch (dmcu->dmcu_state) {
 	case DMCU_UNLOADED:
@@ -400,6 +414,8 @@ static bool dcn10_dmcu_init(struct dmcu *dmcu)
 
 		/* Set backlight ramping stepsize */
 		REG_WRITE(MASTER_COMM_DATA_REG2, abm_gain_stepsize);
+
+		REG_WRITE(MASTER_COMM_DATA_REG3, tx_interrupt_mask);
 
 		/* Set command to initialize microcontroller */
 		REG_UPDATE(MASTER_COMM_CMD_REG, MASTER_COMM_CMD_REG_BYTE0,
@@ -497,7 +513,7 @@ static bool dcn10_dmcu_load_iram(struct dmcu *dmcu,
 	return true;
 }
 
-static void dcn10_get_dmcu_psr_state(struct dmcu *dmcu, uint32_t *psr_state)
+static void dcn10_get_dmcu_psr_state(struct dmcu *dmcu, enum dc_psr_state *state)
 {
 	struct dce_dmcu *dmcu_dce = TO_DCE_DMCU(dmcu);
 
@@ -516,7 +532,7 @@ static void dcn10_get_dmcu_psr_state(struct dmcu *dmcu, uint32_t *psr_state)
 	REG_WRITE(DMCU_IRAM_RD_CTRL, psr_state_offset);
 
 	/* Read data from IRAM_RD_DATA in DMCU_IRAM_RD_DATA*/
-	*psr_state = REG_READ(DMCU_IRAM_RD_DATA);
+	*state = (enum dc_psr_state)REG_READ(DMCU_IRAM_RD_DATA);
 
 	/* Disable write access to IRAM after finished using IRAM
 	 * in order to allow dynamic sleep state
@@ -531,7 +547,7 @@ static void dcn10_dmcu_set_psr_enable(struct dmcu *dmcu, bool enable, bool wait)
 	unsigned int dmcu_wait_reg_ready_interval = 100;
 
 	unsigned int retryCount;
-	uint32_t psr_state = 0;
+	enum dc_psr_state state = PSR_STATE0;
 
 	/* If microcontroller is not running, do nothing */
 	if (dmcu->dmcu_state != DMCU_RUNNING)
@@ -559,12 +575,12 @@ static void dcn10_dmcu_set_psr_enable(struct dmcu *dmcu, bool enable, bool wait)
 	 */
 	if (wait == true) {
 		for (retryCount = 0; retryCount <= 1000; retryCount++) {
-			dcn10_get_dmcu_psr_state(dmcu, &psr_state);
+			dcn10_get_dmcu_psr_state(dmcu, &state);
 			if (enable) {
-				if (psr_state != 0)
+				if (state != PSR_STATE0)
 					break;
 			} else {
-				if (psr_state == 0)
+				if (state == PSR_STATE0)
 					break;
 			}
 			udelay(500);

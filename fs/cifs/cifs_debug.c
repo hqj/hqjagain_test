@@ -23,6 +23,9 @@
 #ifdef CONFIG_CIFS_SMB_DIRECT
 #include "smbdirect.h"
 #endif
+#ifdef CONFIG_CIFS_SWN_UPCALL
+#include "cifs_swn.h"
+#endif
 
 void
 cifs_dump_mem(char *label, void *data, int length)
@@ -115,6 +118,10 @@ static void cifs_debug_tcon(struct seq_file *m, struct cifs_tcon *tcon)
 		seq_printf(m, " POSIX Extensions");
 	if (tcon->ses->server->ops->dump_share_caps)
 		tcon->ses->server->ops->dump_share_caps(m, tcon);
+#ifdef CONFIG_CIFS_SWN_UPCALL
+	if (tcon->use_witness)
+		seq_puts(m, " Witness");
+#endif
 
 	if (tcon->need_reconnect)
 		seq_puts(m, "\tDISCONNECTED ");
@@ -262,6 +269,9 @@ static int cifs_debug_data_proc_show(struct seq_file *m, void *v)
 	seq_printf(m, ",XATTR");
 #endif
 	seq_printf(m, ",ACL");
+#ifdef CONFIG_CIFS_SWN_UPCALL
+	seq_puts(m, ",WITNESS");
+#endif
 	seq_putc(m, '\n');
 	seq_printf(m, "CIFSMaxBufSize: %d\n", CIFSMaxBufSize);
 	seq_printf(m, "Active VFS Requests: %d\n", GlobalTotalActiveXid);
@@ -323,10 +333,8 @@ static int cifs_debug_data_proc_show(struct seq_file *m, void *v)
 			atomic_read(&server->smbd_conn->send_credits),
 			atomic_read(&server->smbd_conn->receive_credits),
 			server->smbd_conn->receive_credit_target);
-		seq_printf(m, "\nPending send_pending: %x "
-			"send_payload_pending: %x",
-			atomic_read(&server->smbd_conn->send_pending),
-			atomic_read(&server->smbd_conn->send_payload_pending));
+		seq_printf(m, "\nPending send_pending: %x ",
+			atomic_read(&server->smbd_conn->send_pending));
 		seq_printf(m, "\nReceive buffers count_receive_queue: %x "
 			"count_empty_packet_queue: %x",
 			server->smbd_conn->count_receive_queue,
@@ -377,6 +385,10 @@ skip_rdma:
 				ses->ses_count, ses->serverOS, ses->serverNOS,
 				ses->capabilities, ses->status);
 			}
+
+			seq_printf(m,"Security type: %s\n",
+				get_security_type_str(server->ops->select_sectype(server, ses->sectype)));
+
 			if (server->rdma)
 				seq_printf(m, "RDMA\n\t");
 			seq_printf(m, "TCP status: %d Instance: %d\n\tLocal Users To "
@@ -397,6 +409,10 @@ skip_rdma:
 			if (ses->sign)
 				seq_puts(m, " signed");
 
+			seq_printf(m, "\n\tUser: %d Cred User: %d",
+				   from_kuid(&init_user_ns, ses->linux_uid),
+				   from_kuid(&init_user_ns, ses->cred_uid));
+
 			if (ses->chan_count > 1) {
 				seq_printf(m, "\n\n\tExtra Channels: %zu\n",
 					   ses->chan_count-1);
@@ -404,7 +420,7 @@ skip_rdma:
 					cifs_dump_channel(m, j, &ses->chans[j]);
 			}
 
-			seq_puts(m, "\n\tShares:");
+			seq_puts(m, "\n\n\tShares:");
 			j = 0;
 
 			seq_printf(m, "\n\t%d) IPC: ", j);
@@ -456,6 +472,9 @@ skip_rdma:
 	spin_unlock(&cifs_tcp_ses_lock);
 	seq_putc(m, '\n');
 
+#ifdef CONFIG_CIFS_SWN_UPCALL
+	cifs_swn_dump(m);
+#endif
 	/* BB add code to dump additional info such as TCP session info now */
 	return 0;
 }

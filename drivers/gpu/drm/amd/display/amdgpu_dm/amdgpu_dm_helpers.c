@@ -318,6 +318,7 @@ void dm_dtn_log_begin(struct dc_context *ctx,
 	dm_dtn_log_append_v(ctx, log_ctx, "%s", msg);
 }
 
+__printf(3, 4)
 void dm_dtn_log_append_v(struct dc_context *ctx,
 	struct dc_log_buffer_ctx *log_ctx,
 	const char *msg, ...)
@@ -400,8 +401,8 @@ bool dm_helpers_dp_mst_start_top_mgr(
 	struct amdgpu_dm_connector *aconnector = link->priv;
 
 	if (!aconnector) {
-			DRM_ERROR("Failed to found connector for link!");
-			return false;
+		DRM_ERROR("Failed to find connector for link!");
+		return false;
 	}
 
 	if (boot) {
@@ -418,20 +419,38 @@ bool dm_helpers_dp_mst_start_top_mgr(
 
 void dm_helpers_dp_mst_stop_top_mgr(
 		struct dc_context *ctx,
-		const struct dc_link *link)
+		struct dc_link *link)
 {
 	struct amdgpu_dm_connector *aconnector = link->priv;
+	uint8_t i;
 
 	if (!aconnector) {
-			DRM_ERROR("Failed to found connector for link!");
-			return;
+		DRM_ERROR("Failed to find connector for link!");
+		return;
 	}
 
 	DRM_INFO("DM_MST: stopping TM on aconnector: %p [id: %d]\n",
 			aconnector, aconnector->base.base.id);
 
-	if (aconnector->mst_mgr.mst_state == true)
+	if (aconnector->mst_mgr.mst_state == true) {
 		drm_dp_mst_topology_mgr_set_mst(&aconnector->mst_mgr, false);
+
+		for (i = 0; i < MAX_SINKS_PER_LINK; i++) {
+			if (link->remote_sinks[i] == NULL)
+				continue;
+
+			if (link->remote_sinks[i]->sink_signal ==
+			    SIGNAL_TYPE_DISPLAY_PORT_MST) {
+				dc_link_remove_remote_sink(link, link->remote_sinks[i]);
+
+				if (aconnector->dc_sink) {
+					dc_sink_release(aconnector->dc_sink);
+					aconnector->dc_sink = NULL;
+					aconnector->dc_link->cur_link_settings.lane_count = 0;
+				}
+			}
+		}
+	}
 }
 
 bool dm_helpers_dp_read_dpcd(
@@ -445,7 +464,7 @@ bool dm_helpers_dp_read_dpcd(
 	struct amdgpu_dm_connector *aconnector = link->priv;
 
 	if (!aconnector) {
-		DRM_ERROR("Failed to found connector for link!");
+		DC_LOG_DC("Failed to find connector for link!\n");
 		return false;
 	}
 
@@ -463,7 +482,7 @@ bool dm_helpers_dp_write_dpcd(
 	struct amdgpu_dm_connector *aconnector = link->priv;
 
 	if (!aconnector) {
-		DRM_ERROR("Failed to found connector for link!");
+		DRM_ERROR("Failed to find connector for link!");
 		return false;
 	}
 
@@ -483,7 +502,7 @@ bool dm_helpers_submit_i2c(
 	bool result;
 
 	if (!aconnector) {
-		DRM_ERROR("Failed to found connector for link!");
+		DRM_ERROR("Failed to find connector for link!");
 		return false;
 	}
 
@@ -538,7 +557,7 @@ bool dm_helpers_is_dp_sink_present(struct dc_link *link)
 	struct amdgpu_dm_connector *aconnector = link->priv;
 
 	if (!aconnector) {
-		BUG_ON("Failed to found connector for link!");
+		BUG_ON("Failed to find connector for link!");
 		return true;
 	}
 
@@ -554,6 +573,7 @@ enum dc_edid_status dm_helpers_read_local_edid(
 		struct dc_sink *sink)
 {
 	struct amdgpu_dm_connector *aconnector = link->priv;
+	struct drm_connector *connector = &aconnector->base;
 	struct i2c_adapter *ddc;
 	int retry = 3;
 	enum dc_edid_status edid_status;
@@ -571,6 +591,15 @@ enum dc_edid_status dm_helpers_read_local_edid(
 
 		edid = drm_get_edid(&aconnector->base, ddc);
 
+		/* DP Compliance Test 4.2.2.6 */
+		if (link->aux_mode && connector->edid_corrupt)
+			drm_dp_send_real_edid_checksum(&aconnector->dm_dp_aux.aux, connector->real_edid_checksum);
+
+		if (!edid && connector->edid_corrupt) {
+			connector->edid_corrupt = false;
+			return EDID_BAD_CHECKSUM;
+		}
+
 		if (!edid)
 			return EDID_NO_RESPONSE;
 
@@ -579,6 +608,20 @@ enum dc_edid_status dm_helpers_read_local_edid(
 
 		/* We don't need the original edid anymore */
 		kfree(edid);
+
+		/* connector->display_info will be parsed from EDID and saved
+		 * into drm_connector->display_info from edid by call stack
+		 * below:
+		 * drm_parse_ycbcr420_deep_color_info
+		 * drm_parse_hdmi_forum_vsdb
+		 * drm_parse_cea_ext
+		 * drm_add_display_info
+		 * drm_connector_update_edid_property
+		 *
+		 * drm_connector->display_info will be used by amdgpu_dm funcs,
+		 * like fill_stream_properties_from_drm_display_mode
+		 */
+		amdgpu_dm_update_connector_after_detect(aconnector);
 
 		edid_status = dm_helpers_parse_edid_caps(
 						ctx,
@@ -591,34 +634,10 @@ enum dc_edid_status dm_helpers_read_local_edid(
 		DRM_ERROR("EDID err: %d, on connector: %s",
 				edid_status,
 				aconnector->base.name);
-	if (link->aux_mode) {
-		union test_request test_request = { {0} };
-		union test_response test_response = { {0} };
 
-		dm_helpers_dp_read_dpcd(ctx,
-					link,
-					DP_TEST_REQUEST,
-					&test_request.raw,
-					sizeof(union test_request));
-
-		if (!test_request.bits.EDID_READ)
-			return edid_status;
-
-		test_response.bits.EDID_CHECKSUM_WRITE = 1;
-
-		dm_helpers_dp_write_dpcd(ctx,
-					link,
-					DP_TEST_EDID_CHECKSUM,
-					&sink->dc_edid.raw_edid[sink->dc_edid.length-1],
-					1);
-
-		dm_helpers_dp_write_dpcd(ctx,
-					link,
-					DP_TEST_RESPONSE,
-					&test_response.raw,
-					sizeof(test_response));
-
-	}
+	/* DP Compliance Test 4.2.2.3 */
+	if (link->aux_mode)
+		drm_dp_send_real_edid_checksum(&aconnector->dm_dp_aux.aux, sink->dc_edid.raw_edid[sink->dc_edid.length-1]);
 
 	return edid_status;
 }
@@ -626,4 +645,22 @@ enum dc_edid_status dm_helpers_read_local_edid(
 void dm_set_dcn_clocks(struct dc_context *ctx, struct dc_clocks *clks)
 {
 	/* TODO: something */
+}
+
+void *dm_helpers_allocate_gpu_mem(
+		struct dc_context *ctx,
+		enum dc_gpu_mem_alloc_type type,
+		size_t size,
+		long long *addr)
+{
+	// TODO
+	return NULL;
+}
+
+void dm_helpers_free_gpu_mem(
+		struct dc_context *ctx,
+		enum dc_gpu_mem_alloc_type type,
+		void *pvMem)
+{
+	// TODO
 }

@@ -136,7 +136,6 @@ int siw_query_device(struct ib_device *base_dev, struct ib_device_attr *attr,
 	attr->max_cq = sdev->attrs.max_cq;
 	attr->max_cqe = sdev->attrs.max_cqe;
 	attr->max_fast_reg_page_list_len = SIW_MAX_SGE_PBL;
-	attr->max_fmr = sdev->attrs.max_fmr;
 	attr->max_mr = sdev->attrs.max_mr;
 	attr->max_mw = sdev->attrs.max_mw;
 	attr->max_mr_size = ~0ull;
@@ -165,18 +164,18 @@ int siw_query_port(struct ib_device *base_dev, u8 port,
 		   struct ib_port_attr *attr)
 {
 	struct siw_device *sdev = to_siw_dev(base_dev);
+	int rv;
 
 	memset(attr, 0, sizeof(*attr));
 
-	attr->active_mtu = attr->max_mtu;
-	attr->active_speed = 2;
-	attr->active_width = 2;
+	rv = ib_get_eth_speed(base_dev, port, &attr->active_speed,
+			 &attr->active_width);
 	attr->gid_tbl_len = 1;
 	attr->max_msg_sz = -1;
 	attr->max_mtu = ib_mtu_int_to_enum(sdev->netdev->mtu);
+	attr->active_mtu = ib_mtu_int_to_enum(sdev->netdev->mtu);
 	attr->phys_state = sdev->state == IB_PORT_ACTIVE ?
 		IB_PORT_PHYS_STATE_LINK_UP : IB_PORT_PHYS_STATE_DISABLED;
-	attr->pkey_tbl_len = 1;
 	attr->port_cap_flags = IB_PORT_CM_SUP | IB_PORT_DEVICE_MGMT_SUP;
 	attr->state = sdev->state;
 	/*
@@ -192,7 +191,7 @@ int siw_query_port(struct ib_device *base_dev, u8 port,
 	 * attr->subnet_timeout = 0;
 	 * attr->init_type_repy = 0;
 	 */
-	return 0;
+	return rv;
 }
 
 int siw_get_port_immutable(struct ib_device *base_dev, u8 port,
@@ -204,17 +203,9 @@ int siw_get_port_immutable(struct ib_device *base_dev, u8 port,
 	if (rv)
 		return rv;
 
-	port_immutable->pkey_tbl_len = attr.pkey_tbl_len;
 	port_immutable->gid_tbl_len = attr.gid_tbl_len;
 	port_immutable->core_cap_flags = RDMA_CORE_PORT_IWARP;
 
-	return 0;
-}
-
-int siw_query_pkey(struct ib_device *base_dev, u8 port, u16 idx, u16 *pkey)
-{
-	/* Report the default pkey */
-	*pkey = 0xffff;
 	return 0;
 }
 
@@ -243,12 +234,13 @@ int siw_alloc_pd(struct ib_pd *pd, struct ib_udata *udata)
 	return 0;
 }
 
-void siw_dealloc_pd(struct ib_pd *pd, struct ib_udata *udata)
+int siw_dealloc_pd(struct ib_pd *pd, struct ib_udata *udata)
 {
 	struct siw_device *sdev = to_siw_dev(pd->device);
 
 	siw_dbg_pd(pd, "free PD\n");
 	atomic_dec(&sdev->num_pd);
+	return 0;
 }
 
 void siw_qp_get_ref(struct ib_qp *base_qp)
@@ -315,6 +307,9 @@ struct ib_qp *siw_create_qp(struct ib_pd *pd,
 
 	siw_dbg(base_dev, "create new QP\n");
 
+	if (attrs->create_flags)
+		return ERR_PTR(-EOPNOTSUPP);
+
 	if (atomic_inc_return(&sdev->num_qp) > SIW_MAX_QP) {
 		siw_dbg(base_dev, "too many QP's\n");
 		rv = -ENOMEM;
@@ -322,7 +317,7 @@ struct ib_qp *siw_create_qp(struct ib_pd *pd,
 	}
 	if (attrs->qp_type != IB_QPT_RC) {
 		siw_dbg(base_dev, "only RC QP's supported\n");
-		rv = -EINVAL;
+		rv = -EOPNOTSUPP;
 		goto err_out;
 	}
 	if ((attrs->cap.max_send_wr > SIW_MAX_QP_WR) ||
@@ -551,6 +546,9 @@ int siw_verbs_modify_qp(struct ib_qp *base_qp, struct ib_qp_attr *attr,
 
 	if (!attr_mask)
 		return 0;
+
+	if (attr_mask & ~IB_QP_ATTR_STANDARD_BITS)
+		return -EOPNOTSUPP;
 
 	memset(&new_attrs, 0, sizeof(new_attrs));
 
@@ -1064,7 +1062,7 @@ int siw_post_receive(struct ib_qp *base_qp, const struct ib_recv_wr *wr,
 	return rv > 0 ? 0 : rv;
 }
 
-void siw_destroy_cq(struct ib_cq *base_cq, struct ib_udata *udata)
+int siw_destroy_cq(struct ib_cq *base_cq, struct ib_udata *udata)
 {
 	struct siw_cq *cq = to_siw_cq(base_cq);
 	struct siw_device *sdev = to_siw_dev(base_cq->device);
@@ -1082,6 +1080,7 @@ void siw_destroy_cq(struct ib_cq *base_cq, struct ib_udata *udata)
 	atomic_dec(&sdev->num_cq);
 
 	vfree(cq->queue);
+	return 0;
 }
 
 /*
@@ -1100,6 +1099,9 @@ int siw_create_cq(struct ib_cq *base_cq, const struct ib_cq_init_attr *attr,
 	struct siw_device *sdev = to_siw_dev(base_cq->device);
 	struct siw_cq *cq = to_siw_cq(base_cq);
 	int rv, size = attr->cqe;
+
+	if (attr->flags)
+		return -EOPNOTSUPP;
 
 	if (atomic_inc_return(&sdev->num_cq) > SIW_MAX_CQ) {
 		siw_dbg(base_cq->device, "too many CQ's\n");
@@ -1373,7 +1375,7 @@ err_out:
 }
 
 struct ib_mr *siw_alloc_mr(struct ib_pd *pd, enum ib_mr_type mr_type,
-			   u32 max_sge, struct ib_udata *udata)
+			   u32 max_sge)
 {
 	struct siw_device *sdev = to_siw_dev(pd->device);
 	struct siw_mr *mr = NULL;
@@ -1562,6 +1564,9 @@ int siw_create_srq(struct ib_srq *base_srq,
 					  base_ucontext);
 	int rv;
 
+	if (init_attrs->srq_type != IB_SRQT_BASIC)
+		return -EOPNOTSUPP;
+
 	if (atomic_inc_return(&sdev->num_srq) > SIW_MAX_SRQ) {
 		siw_dbg_pd(base_srq->pd, "too many SRQ's\n");
 		rv = -ENOMEM;
@@ -1699,7 +1704,7 @@ int siw_query_srq(struct ib_srq *base_srq, struct ib_srq_attr *attrs)
  * QP anymore - the code trusts the RDMA core environment to keep track
  * of QP references.
  */
-void siw_destroy_srq(struct ib_srq *base_srq, struct ib_udata *udata)
+int siw_destroy_srq(struct ib_srq *base_srq, struct ib_udata *udata)
 {
 	struct siw_srq *srq = to_siw_srq(base_srq);
 	struct siw_device *sdev = to_siw_dev(base_srq->device);
@@ -1711,6 +1716,7 @@ void siw_destroy_srq(struct ib_srq *base_srq, struct ib_udata *udata)
 		rdma_user_mmap_entry_remove(srq->srq_entry);
 	vfree(srq->recvq);
 	atomic_dec(&sdev->num_srq);
+	return 0;
 }
 
 /*

@@ -46,7 +46,7 @@ int cpm_muram_init(void)
 {
 	struct device_node *np;
 	struct resource r;
-	u32 zero[OF_MAX_ADDR_CELLS] = {};
+	__be32 zero[OF_MAX_ADDR_CELLS] = {};
 	resource_size_t max = 0;
 	int i = 0;
 	int ret = 0;
@@ -231,7 +231,7 @@ EXPORT_SYMBOL(cpm_muram_offset);
 
 /**
  * cpm_muram_dma - turn a muram virtual address into a DMA address
- * @offset: virtual address from cpm_muram_addr() to convert
+ * @addr: virtual address from cpm_muram_addr() to convert
  */
 dma_addr_t cpm_muram_dma(void __iomem *addr)
 {

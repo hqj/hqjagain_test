@@ -7,6 +7,7 @@
 #include <linux/btf.h>
 #include <linux/filter.h>
 #include <net/tcp.h>
+#include <net/bpf_sk_storage.h>
 
 static u32 optional_ops[] = {
 	offsetof(struct tcp_congestion_ops, init),
@@ -94,6 +95,7 @@ static bool bpf_tcp_ca_is_valid_access(int off, int size,
 }
 
 static int bpf_tcp_ca_btf_struct_access(struct bpf_verifier_log *log,
+					const struct btf *btf,
 					const struct btf_type *t, int off,
 					int size, enum bpf_access_type atype,
 					u32 *next_btf_id)
@@ -101,7 +103,7 @@ static int bpf_tcp_ca_btf_struct_access(struct bpf_verifier_log *log,
 	size_t end;
 
 	if (atype == BPF_READ)
-		return btf_struct_access(log, t, off, size, atype, next_btf_id);
+		return btf_struct_access(log, btf, t, off, size, atype, next_btf_id);
 
 	if (t != tcp_sock_type) {
 		bpf_log(log, "only read is supported\n");
@@ -156,8 +158,8 @@ static const struct bpf_func_proto bpf_tcp_send_ack_proto = {
 	/* In case we want to report error later */
 	.ret_type	= RET_INTEGER,
 	.arg1_type	= ARG_PTR_TO_BTF_ID,
+	.arg1_btf_id	= &tcp_sock_id,
 	.arg2_type	= ARG_ANYTHING,
-	.btf_id		= &tcp_sock_id,
 };
 
 static const struct bpf_func_proto *
@@ -167,6 +169,10 @@ bpf_tcp_ca_get_func_proto(enum bpf_func_id func_id,
 	switch (func_id) {
 	case BPF_FUNC_tcp_send_ack:
 		return &bpf_tcp_send_ack_proto;
+	case BPF_FUNC_sk_storage_get:
+		return &bpf_sk_storage_get_proto;
+	case BPF_FUNC_sk_storage_delete:
+		return &bpf_sk_storage_delete_proto;
 	default:
 		return bpf_base_func_proto(func_id);
 	}
@@ -184,7 +190,6 @@ static int bpf_tcp_ca_init_member(const struct btf_type *t,
 {
 	const struct tcp_congestion_ops *utcp_ca;
 	struct tcp_congestion_ops *tcp_ca;
-	size_t tcp_ca_name_len;
 	int prog_fd;
 	u32 moff;
 
@@ -199,13 +204,11 @@ static int bpf_tcp_ca_init_member(const struct btf_type *t,
 		tcp_ca->flags = utcp_ca->flags;
 		return 1;
 	case offsetof(struct tcp_congestion_ops, name):
-		tcp_ca_name_len = strnlen(utcp_ca->name, sizeof(utcp_ca->name));
-		if (!tcp_ca_name_len ||
-		    tcp_ca_name_len == sizeof(utcp_ca->name))
+		if (bpf_obj_name_cpy(tcp_ca->name, utcp_ca->name,
+				     sizeof(tcp_ca->name)) <= 0)
 			return -EINVAL;
 		if (tcp_ca_find(utcp_ca->name))
 			return -EEXIST;
-		memcpy(tcp_ca->name, utcp_ca->name, sizeof(tcp_ca->name));
 		return 1;
 	}
 

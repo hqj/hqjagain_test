@@ -7,15 +7,14 @@
 #include <linux/interrupt.h>
 #include <linux/types.h>
 #include <crypto/scatterwalk.h>
-#include <crypto/sha.h>
+#include <crypto/sha1.h>
+#include <crypto/sha2.h>
 
 #include "cipher.h"
 #include "common.h"
 #include "core.h"
 #include "regs-v5.h"
 #include "sha.h"
-
-#define QCE_SECTOR_SIZE		512
 
 static inline u32 qce_read(struct qce_device *qce, u32 offset)
 {
