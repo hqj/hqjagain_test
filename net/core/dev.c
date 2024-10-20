@@ -9555,26 +9555,26 @@ static int dev_xdp_attach(struct net_device *dev, struct netlink_ext_ack *extack
 			NL_SET_ERR_MSG(extack, "XDP program already attached");
 			return -EBUSY;
 		}
-		if (!offload && dev_xdp_prog(dev, other_mode)) {
-			NL_SET_ERR_MSG(extack, "Native and generic XDP can't be active at the same time");
-			return -EEXIST;
-		}
+		/* if (!offload && dev_xdp_prog(dev, other_mode)) { */
+		/* 	NL_SET_ERR_MSG(extack, "Native and generic XDP can't be active at the same time"); */
+		/* 	return -EEXIST; */
+		/* } */
 		if (!offload && bpf_prog_is_offloaded(new_prog->aux)) {
 			NL_SET_ERR_MSG(extack, "Using offloaded program without HW_MODE flag is not supported");
 			return -EINVAL;
 		}
-		if (bpf_prog_is_dev_bound(new_prog->aux) && !bpf_offload_dev_match(new_prog, dev)) {
-			NL_SET_ERR_MSG(extack, "Program bound to different device");
-			return -EINVAL;
-		}
-		if (new_prog->expected_attach_type == BPF_XDP_DEVMAP) {
-			NL_SET_ERR_MSG(extack, "BPF_XDP_DEVMAP programs can not be attached to a device");
-			return -EINVAL;
-		}
-		if (new_prog->expected_attach_type == BPF_XDP_CPUMAP) {
-			NL_SET_ERR_MSG(extack, "BPF_XDP_CPUMAP programs can not be attached to a device");
-			return -EINVAL;
-		}
+		/* if (bpf_prog_is_dev_bound(new_prog->aux) && !bpf_offload_dev_match(new_prog, dev)) { */
+		/* 	NL_SET_ERR_MSG(extack, "Program bound to different device"); */
+		/* 	return -EINVAL; */
+		/* } */
+		/* if (new_prog->expected_attach_type == BPF_XDP_DEVMAP) { */
+		/* 	NL_SET_ERR_MSG(extack, "BPF_XDP_DEVMAP programs can not be attached to a device"); */
+		/* 	return -EINVAL; */
+		/* } */
+		/* if (new_prog->expected_attach_type == BPF_XDP_CPUMAP) { */
+		/* 	NL_SET_ERR_MSG(extack, "BPF_XDP_CPUMAP programs can not be attached to a device"); */
+		/* 	return -EINVAL; */
+		/* } */
 	}
 
 	/* don't call drivers if the effective program didn't change */

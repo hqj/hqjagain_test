@@ -284,8 +284,10 @@ static size_t adjust_range_hwpoison(struct page *page, size_t offset, size_t byt
 	page = nth_page(page, offset / PAGE_SIZE);
 	offset %= PAGE_SIZE;
 	while (1) {
+#ifdef CONFIG_MEMORY_FAILURE
 		if (is_raw_hwpoison_page_in_hugepage(page))
 			break;
+#endif
 
 		/* Safe to read n bytes without touching HWPOISON subpage. */
 		n = min(bytes, (size_t)PAGE_SIZE - offset);

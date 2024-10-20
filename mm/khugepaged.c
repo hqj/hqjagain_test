@@ -862,12 +862,14 @@ static bool hpage_collapse_scan_abort(int nid, struct collapse_control *cc)
 	if (cc->node_load[nid])
 		return false;
 
+#ifdef CONFIG_NUMA
 	for (i = 0; i < MAX_NUMNODES; i++) {
 		if (!cc->node_load[i])
 			continue;
 		if (node_distance(nid, i) > node_reclaim_distance)
 			return true;
 	}
+#endif
 	return false;
 }
 

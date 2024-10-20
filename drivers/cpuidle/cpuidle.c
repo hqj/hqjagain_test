@@ -200,6 +200,11 @@ int cpuidle_enter_s2idle(struct cpuidle_driver *drv, struct cpuidle_device *dev)
 	}
 	return index;
 }
+#else
+int cpuidle_enter_s2idle(struct cpuidle_driver *drv, struct cpuidle_device *dev)
+{
+	return 0;
+}
 #endif /* CONFIG_SUSPEND */
 
 /**

@@ -251,8 +251,8 @@ static int vmap_try_huge_p4d(p4d_t *p4d, unsigned long addr, unsigned long end,
 	if (!IS_ALIGNED(phys_addr, P4D_SIZE))
 		return 0;
 
-	if (p4d_present(*p4d) && !p4d_free_pud_page(p4d, addr))
-		return 0;
+	/* if (p4d_present(*p4d) && !p4d_free_pud_page(p4d, addr)) */
+	/* 	return 0; */
 
 	return p4d_set_huge(p4d, phys_addr, prot);
 }

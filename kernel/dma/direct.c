@@ -293,7 +293,7 @@ void *dma_direct_alloc(struct device *dev, size_t size,
 
 	if (set_uncached) {
 		arch_dma_prep_coherent(page, size);
-		ret = arch_dma_set_uncached(ret, size);
+		/* ret = arch_dma_set_uncached(ret, size); */
 		if (IS_ERR(ret))
 			goto out_encrypt_pages;
 	}

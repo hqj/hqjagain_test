@@ -2251,3 +2251,13 @@ void fuse_init_symlink(struct inode *inode)
 	inode->i_data.a_ops = &fuse_symlink_aops;
 	inode_nohighmem(inode);
 }
+
+#ifndef CONFIG_FUSE_DAX
+
+int fuse_dax_break_layouts(struct inode *inode, u64 dmap_start, u64 dmap_end)
+{
+	return 0;
+}
+
+#endif
+

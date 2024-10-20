@@ -1910,3 +1910,43 @@ static int __init init_bio(void)
 	return 0;
 }
 subsys_initcall(init_bio);
+
+#ifndef CONFIG_BLK_INLINE_ENCRYPTION
+
+int __bio_crypt_clone(struct bio *dst, struct bio *src, gfp_t gfp_mask)
+{
+	return 0;
+}
+
+void __bio_crypt_advance(struct bio *bio, unsigned int bytes)
+{
+}
+
+void __bio_crypt_free_ctx(struct bio *bio)
+{
+}
+
+bool __blk_crypto_bio_prep(struct bio **bio_ptr)
+{
+	return true;
+}
+
+void __blk_crypto_rq_put_keyslot(struct request *rq)
+{
+}
+
+blk_status_t __blk_crypto_rq_get_keyslot(struct request *rq)
+{
+	return BLK_STS_OK;
+}
+
+void __blk_crypto_free_request(struct request *rq)
+{
+}
+
+int __blk_crypto_rq_bio_prep(struct request *rq, struct bio *bio,
+			     gfp_t gfp_mask)
+{
+	return 0;
+}
+#endif

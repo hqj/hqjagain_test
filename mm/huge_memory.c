@@ -1758,6 +1758,18 @@ void huge_pud_set_accessed(struct vm_fault *vmf, pud_t orig_pud)
 unlock:
 	spin_unlock(vmf->ptl);
 }
+#else
+void touch_pud(struct vm_area_struct *vma, unsigned long addr,
+			pud_t *pud, bool write)
+{
+}
+
+int copy_huge_pud(struct mm_struct *dst_mm, struct mm_struct *src_mm,
+			pud_t *dst_pud, pud_t *src_pud, unsigned long addr,
+			struct vm_area_struct *vma)
+{
+	return 0;
+}
 #endif /* CONFIG_HAVE_ARCH_TRANSPARENT_HUGEPAGE_PUD */
 
 void huge_pmd_set_accessed(struct vm_fault *vmf)

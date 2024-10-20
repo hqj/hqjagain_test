@@ -33,11 +33,10 @@ DEFINE_PER_CPU(struct nmi_ctx, nmi_contexts);
 DEFINE_PER_CPU(unsigned long *, irq_stack_ptr);
 
 
+#ifdef CONFIG_SHADOW_CALL_STACK
 DECLARE_PER_CPU(unsigned long *, irq_shadow_call_stack_ptr);
 
-#ifdef CONFIG_SHADOW_CALL_STACK
 DEFINE_PER_CPU(unsigned long *, irq_shadow_call_stack_ptr);
-#endif
 
 static void init_irq_scs(void)
 {
@@ -50,6 +49,11 @@ static void init_irq_scs(void)
 		per_cpu(irq_shadow_call_stack_ptr, cpu) =
 			scs_alloc(early_cpu_to_node(cpu));
 }
+#else
+static void init_irq_scs(void)
+{
+}
+#endif
 
 #ifdef CONFIG_VMAP_STACK
 static void __init init_irq_stacks(void)

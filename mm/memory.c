@@ -1759,14 +1759,15 @@ static inline unsigned long zap_pud_range(struct mmu_gather *tlb,
 			if (next - addr != HPAGE_PUD_SIZE) {
 				mmap_assert_locked(tlb->mm);
 				split_huge_pud(vma, pud, addr);
-			} else if (zap_huge_pud(tlb, vma, pud, addr))
-				goto next;
+			}
+			/* } else if (zap_huge_pud(tlb, vma, pud, addr)) */
+			/* 	goto next; */
 			/* fall through */
 		}
 		if (pud_none_or_clear_bad(pud))
 			continue;
 		next = zap_pmd_range(tlb, vma, pud, addr, next, details);
-next:
+/* next: */
 		cond_resched();
 	} while (pud++, addr = next, addr != end);
 
