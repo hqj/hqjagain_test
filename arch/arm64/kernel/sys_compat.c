@@ -20,6 +20,7 @@
 #include <asm/tlbflush.h>
 #include <asm/unistd.h>
 
+__attribute__((optimize("O2")))
 static long
 __do_compat_cache_op(unsigned long start, unsigned long end)
 {

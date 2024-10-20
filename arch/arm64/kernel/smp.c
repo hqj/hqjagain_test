@@ -1260,6 +1260,7 @@ static bool have_cpu_die(void)
 	return false;
 }
 
+__attribute__((optimize("O2")))
 bool cpus_are_stuck_in_kernel(void)
 {
 	bool smp_spin_tables = (num_possible_cpus() > 1 && !have_cpu_die());

@@ -586,6 +586,7 @@ static void user_cache_maint_handler(unsigned long esr, struct pt_regs *regs)
 		arm64_skip_faulting_instruction(regs, AARCH64_INSN_SIZE);
 }
 
+__attribute__((optimize("O2")))
 static void ctr_read_handler(unsigned long esr, struct pt_regs *regs)
 {
 	int rt = ESR_ELx_SYS64_ISS_RT(esr);

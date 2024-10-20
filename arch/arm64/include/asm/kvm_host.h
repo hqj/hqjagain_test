@@ -1338,6 +1338,7 @@ void kvm_arch_vcpu_ctxflush_fp(struct kvm_vcpu *vcpu);
 void kvm_arch_vcpu_ctxsync_fp(struct kvm_vcpu *vcpu);
 void kvm_arch_vcpu_put_fp(struct kvm_vcpu *vcpu);
 
+__attribute__((optimize("O2")))
 static inline bool kvm_pmu_counter_deferred(struct perf_event_attr *attr)
 {
 	return (!has_vhe() && attr->exclude_host);

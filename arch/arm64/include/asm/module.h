@@ -42,6 +42,7 @@ struct plt_entry {
 	__le32	br;	/* br	x16				*/
 };
 
+__attribute__((optimize("O2")))
 static inline bool is_forbidden_offset_for_adrp(void *place)
 {
 	return cpus_have_final_cap(ARM64_WORKAROUND_843419) &&

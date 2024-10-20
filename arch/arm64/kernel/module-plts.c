@@ -154,6 +154,7 @@ static bool duplicate_rel(const Elf64_Rela *rela, int num)
 	return num > 0 && cmp_rela(rela + num, rela + num - 1) == 0;
 }
 
+__attribute__((optimize("O2")))
 static unsigned int count_plts(Elf64_Sym *syms, Elf64_Rela *rela, int num,
 			       Elf64_Word dstidx, Elf_Shdr *dstsec)
 {

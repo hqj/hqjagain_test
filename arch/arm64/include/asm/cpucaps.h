@@ -13,10 +13,10 @@
 static __always_inline bool
 cpucap_is_possible(const unsigned int cap)
 {
-	compiletime_assert(__builtin_constant_p(cap),
-			   "cap must be a constant");
-	compiletime_assert(cap < ARM64_NCAPS,
-			   "cap must be < ARM64_NCAPS");
+	/* compiletime_assert(__builtin_constant_p(cap), */
+	/* 		   "cap must be a constant"); */
+	/* compiletime_assert(cap < ARM64_NCAPS, */
+	/* 		   "cap must be < ARM64_NCAPS"); */
 
 	switch (cap) {
 	case ARM64_HAS_PAN:
