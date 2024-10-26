@@ -236,6 +236,8 @@ static inline phys_addr_t default_swiotlb_limit(void)
 }
 #endif /* CONFIG_SWIOTLB */
 
+#ifdef CONFIG_SWIOTLB
+
 phys_addr_t swiotlb_tbl_map_single(struct device *hwdev, phys_addr_t phys,
 		size_t mapping_size, unsigned int alloc_aligned_mask,
 		enum dma_data_direction dir, unsigned long attrs);
@@ -278,6 +280,30 @@ static inline void swiotlb_sync_single_for_cpu(struct device *dev,
 	if (unlikely(pool))
 		__swiotlb_sync_single_for_cpu(dev, addr, size, dir, pool);
 }
+
+#else /* CONFIG_SWIOTLB */
+static inline void swiotlb_tbl_unmap_single(struct device *dev,
+		phys_addr_t addr, size_t size, enum dma_data_direction dir,
+		unsigned long attrs)
+{
+}
+
+static inline void swiotlb_sync_single_for_device(struct device *dev,
+		phys_addr_t addr, size_t size, enum dma_data_direction dir)
+{
+}
+
+static inline void swiotlb_sync_single_for_cpu(struct device *dev,
+		phys_addr_t addr, size_t size, enum dma_data_direction dir)
+{
+}
+
+static dma_addr_t swiotlb_map(struct device *dev, phys_addr_t phys,
+		size_t size, enum dma_data_direction dir, unsigned long attrs)
+{
+	return DMA_MAPPING_ERROR;
+}
+#endif /* CONFIG_SWIOTLB */
 
 extern void swiotlb_print_info(void);
 

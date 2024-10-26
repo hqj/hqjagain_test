@@ -66,6 +66,13 @@
 
 #ifdef CONFIG_CPU_FREQ_GOV_SCHEDUTIL
 # include "cpufreq_schedutil.c"
+#else
+unsigned long sugov_effective_cpu_perf(int cpu, unsigned long actual,
+				 unsigned long min,
+				 unsigned long max)
+{
+	return 0;
+}
 #endif
 
 #ifdef CONFIG_SCHED_DEBUG

@@ -179,9 +179,11 @@ static void *dma_direct_alloc_from_pool(struct device *dev, size_t size,
 		return NULL;
 
 	gfp |= dma_direct_optimal_gfp_mask(dev, &phys_limit);
+#ifdef CONFIG_DMA_COHERENT_POOL
 	page = dma_alloc_from_pool(dev, size, &ret, gfp, dma_coherent_ok);
 	if (!page)
 		return NULL;
+#endif
 	*dma_handle = phys_to_dma_direct(dev, page_to_phys(page));
 	return ret;
 }
