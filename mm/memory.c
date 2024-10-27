@@ -2349,10 +2349,12 @@ static vm_fault_t insert_pfn(struct vm_area_struct *vma, unsigned long addr,
 		goto out_unlock;
 	}
 
+#ifdef CONFIG_ARCH_HAS_PTE_DEVMAP
 	/* Ok, finally just insert the thing.. */
 	if (pfn_t_devmap(pfn))
 		entry = pte_mkdevmap(pfn_t_pte(pfn, prot));
 	else
+#endif
 		entry = pte_mkspecial(pfn_t_pte(pfn, prot));
 
 	if (mkwrite) {

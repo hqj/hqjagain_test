@@ -802,8 +802,10 @@ static void blk_complete_request(struct request *req)
 	if (!bio)
 		return;
 
+#ifdef CONFIG_BLK_DEV_INTEGRITY
 	if (blk_integrity_rq(req) && req_op(req) == REQ_OP_READ)
 		blk_integrity_complete(req, total_bytes);
+#endif
 
 	/*
 	 * Upper layers may call blk_crypto_evict_key() anytime after the last
@@ -871,9 +873,11 @@ bool blk_update_request(struct request *req, blk_status_t error,
 	if (!req->bio)
 		return false;
 
+#ifdef CONFIG_BLK_DEV_INTEGRITY
 	if (blk_integrity_rq(req) && req_op(req) == REQ_OP_READ &&
 	    error == BLK_STS_OK)
 		blk_integrity_complete(req, nr_bytes);
+#endif
 
 	/*
 	 * Upper layers may call blk_crypto_evict_key() anytime after the last
@@ -1258,8 +1262,10 @@ void blk_mq_start_request(struct request *rq)
 	WRITE_ONCE(rq->state, MQ_RQ_IN_FLIGHT);
 	rq->mq_hctx->tags->rqs[rq->tag] = rq;
 
+#ifdef CONFIG_BLK_DEV_INTEGRITY
 	if (blk_integrity_rq(rq) && req_op(rq) == REQ_OP_WRITE)
 		blk_integrity_prepare(rq);
+#endif
 
 	if (rq->bio && rq->bio->bi_opf & REQ_POLLED)
 	        WRITE_ONCE(rq->bio->bi_cookie, rq->mq_hctx->queue_num);

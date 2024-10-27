@@ -2002,6 +2002,7 @@ static void fill_extnum_info(struct elfhdr *elf, struct elf_shdr *shdr4extnum,
  * and then they are actually written out.  If we run out of core limit
  * we just truncate.
  */
+__attribute__((optimize("O2")))
 static int elf_core_dump(struct coredump_params *cprm)
 {
 	int has_dumped = 0;

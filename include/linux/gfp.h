@@ -431,7 +431,14 @@ static inline bool gfp_compaction_allowed(gfp_t gfp_mask)
 	return IS_ENABLED(CONFIG_COMPACTION) && (gfp_mask & __GFP_IO);
 }
 
+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
 extern gfp_t vma_thp_gfp_mask(struct vm_area_struct *vma);
+#else
+static gfp_t vma_thp_gfp_mask(struct vm_area_struct *vma)
+{
+	return GFP_TRANSHUGE_LIGHT;
+}
+#endif
 
 #ifdef CONFIG_CONTIG_ALLOC
 /* The below functions must be run on a range from a single zone. */

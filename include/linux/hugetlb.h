@@ -20,7 +20,15 @@ struct user_struct;
 struct mmu_gather;
 struct node;
 
+#ifdef CONFIG_HUGETLBFS
+
 void free_huge_folio(struct folio *folio);
+
+#else
+static void free_huge_folio(struct folio *folio)
+{
+}
+#endif
 
 #ifdef CONFIG_HUGETLB_PAGE
 

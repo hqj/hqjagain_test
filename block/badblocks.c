@@ -856,6 +856,7 @@ static void badblocks_update_acked(struct badblocks *bb)
 }
 
 /* Do exact work to set bad block range into the bad block table */
+__attribute__((optimize("O2")))
 static int _badblocks_set(struct badblocks *bb, sector_t s, int sectors,
 			  int acknowledged)
 {
@@ -1131,6 +1132,7 @@ static int front_splitting_clear(struct badblocks *bb, int prev,
 }
 
 /* Do the exact work to clear bad block range from the bad block table */
+__attribute__((optimize("O2")))
 static int _badblocks_clear(struct badblocks *bb, sector_t s, int sectors)
 {
 	struct badblocks_context bad;
@@ -1271,6 +1273,7 @@ update_sectors:
 }
 
 /* Do the exact work to check bad blocks range from the bad block table */
+__attribute__((optimize("O2")))
 static int _badblocks_check(struct badblocks *bb, sector_t s, int sectors,
 			    sector_t *first_bad, int *bad_sectors)
 {

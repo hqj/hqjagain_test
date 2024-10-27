@@ -639,7 +639,14 @@ static inline void folio_set_order(struct folio *folio, unsigned int order)
 #endif
 }
 
+#ifdef CONFIG_TRANSPARENT_HUGEPAGE
 void __folio_undo_large_rmappable(struct folio *folio);
+#else
+static void __folio_undo_large_rmappable(struct folio *folio)
+{
+}
+#endif
+
 static inline void folio_undo_large_rmappable(struct folio *folio)
 {
 	if (folio_order(folio) <= 1 || !folio_test_large_rmappable(folio))
@@ -1214,8 +1221,25 @@ int numa_migrate_check(struct folio *folio, struct vm_fault *vmf,
 		      unsigned long addr, int *flags, bool writable,
 		      int *last_cpupid);
 
-void free_zone_device_folio(struct folio *folio);
+#ifdef CONFIG_DEVICE_MIGRATION
 int migrate_device_coherent_folio(struct folio *folio);
+#else
+static int migrate_device_coherent_folio(struct folio *folio)
+{
+	return 0;
+}
+#endif
+
+#ifdef CONFIG_ZONE_DEVICE
+
+void free_zone_device_folio(struct folio *folio);
+
+#else
+static void free_zone_device_folio(struct folio *folio)
+{
+}
+
+#endif
 
 /*
  * mm/gup.c

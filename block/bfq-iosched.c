@@ -4151,6 +4151,8 @@ static void __bfq_bfqq_recalc_budget(struct bfq_data *bfqd,
  * during its service slot. And this sum is the quantity used in this
  * function to evaluate the I/O speed of a process.
  */
+#include <linux/math64.h>
+__attribute__((optimize("O2")))
 static bool bfq_bfqq_is_slow(struct bfq_data *bfqd, struct bfq_queue *bfqq,
 				 bool compensate, unsigned long *delta_ms)
 {
@@ -4177,7 +4179,8 @@ static bool bfq_bfqq_is_slow(struct bfq_data *bfqd, struct bfq_queue *bfqq,
 			  */
 			*delta_ms = BFQ_MIN_TT / NSEC_PER_MSEC;
 		else /* charge at least one seek */
-			*delta_ms = bfq_slice_idle / NSEC_PER_MSEC;
+			/* *delta_ms = bfq_slice_idle / NSEC_PER_MSEC; */
+			*delta_ms = div_u64(bfq_slice_idle, NSEC_PER_MSEC);
 
 		return slow;
 	}

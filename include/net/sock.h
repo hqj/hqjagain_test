@@ -2629,8 +2629,10 @@ sock_recv_timestamp(struct msghdr *msg, struct sock *sk, struct sk_buff *skb)
 	else
 		sock_write_timestamp(sk, kt);
 
+#ifdef CONFIG_WIRELESS
 	if (sock_flag(sk, SOCK_WIFI_STATUS) && skb_wifi_acked_valid(skb))
 		__sock_recv_wifi_status(msg, sk, skb);
+#endif
 }
 
 void __sock_recv_cmsgs(struct msghdr *msg, struct sock *sk,

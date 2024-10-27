@@ -246,9 +246,22 @@ vm_fault_t dax_iomap_fault(struct vm_fault *vmf, unsigned int order,
 		    pfn_t *pfnp, int *errp, const struct iomap_ops *ops);
 vm_fault_t dax_finish_sync_fault(struct vm_fault *vmf,
 		unsigned int order, pfn_t pfn);
+#if IS_ENABLED(CONFIG_DAX)
 int dax_delete_mapping_entry(struct address_space *mapping, pgoff_t index);
 int dax_invalidate_mapping_entry_sync(struct address_space *mapping,
 				      pgoff_t index);
+#else
+static int dax_delete_mapping_entry(struct address_space *mapping, pgoff_t index)
+{
+	return 0;
+}
+
+static int dax_invalidate_mapping_entry_sync(struct address_space *mapping,
+				      pgoff_t index)
+{
+	return 0;
+}
+#endif
 int dax_dedupe_file_range_compare(struct inode *src, loff_t srcoff,
 				  struct inode *dest, loff_t destoff,
 				  loff_t len, bool *is_same,
